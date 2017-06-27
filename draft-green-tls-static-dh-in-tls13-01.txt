@@ -1,0 +1,392 @@
+
+
+
+
+Network Working Group                                           M. Green
+Internet-Draft                              Cryptography Engineering LLC
+Intended status: Informational                                  R. Droms
+Expires: May 4, 2017                                    October 31, 2016
+
+
+          Data Center use of Static Diffie-Hellman in TLS 1.3
+                 draft-green-tls-static-dh-in-tls13-01
+
+Abstract
+
+   Unlike earlier versions of TLS, current drafts of TLS 1.3 have
+   instead adopted ephemeral-mode Diffie-Hellman and elliptic-curve
+   Diffie-Hellman as the primary cryptographic key exchange mechanism
+   used in TLS.  This document describes an optional configuration for
+   TLS servers that allows for the use of a static Diffie-Hellman secret
+   for all TLS connections made to the server.  Passive monitoring of
+   TLS connections can be enabled by installing a corresponding copy of
+   this key in each monitoring device.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on May 4, 2017.
+
+Copyright Notice
+
+   Copyright (c) 2016 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 1]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+1.  Introduction
+
+   Unlike earlier versions of TLS, current drafts of TLS 1.3
+   [I-D.ietf-tls-tls13] do not provide support for the RSA handshake --
+   and have instead adopted ephemeral-mode Diffie-Hellman and elliptic-
+   curve Diffie-Hellman as the primary cryptographic key exchange
+   mechanism used in TLS.
+
+   While ephemeral (EC) Diffie-Hellman is in nearly all ways an
+   improvement over the TLS RSA handshake, it has a limitation in
+   certain enterprise settings.  Specifically, the use of ephemeral
+   (PFS) ciphersuites is not compatible with enterprise network
+   monitoring tools such as the use ofIntrusion Detection Systems (IDS)
+   and application monitoring systems to meet regulatory auditing
+   requirements that must passively monitor intranet TLS connections
+   made to endpoints under the enterprise's control.  This traffic
+   includes TLS connections made from enterprise network security
+   devices (firewalls) and load balancers at the edge of the enterprise
+   network to internal enterprise TLS servers.  It does not include TLS
+   connections traveling over the external Internet.
+
+   Such monitoring is ubiquitous, indispensable and required by law in
+   some industries.  While this monitoring might be considered pervasive
+   monitoring and an attack on the open Internet, it is required for
+   effective, safe and legal operation of enterprise networks.  Loss of
+   this capability may slow adoption of TLS 1.3.
+
+   This document describes an optional configuration for TLS servers
+   that allows for the use of a static Diffie-Hellman secret for all TLS
+   connections made to the server.  Passive monitoring of TLS
+   connections can be enabled by installing a corresponding copy of this
+   key in each monitoring device.
+
+   An advantage of this proposal is that it can be implemented using
+   software modifications to the TLS server only, without the need to
+   make changes to TLS client implementations.
+
+2.  Enterprise TLS Decryption Architecture
+
+   (Insert high-level ASCII-art picture here, emphasizing that the
+   traffic that uses static-DH is contained entirely in the enterprise
+   network, while traffic outside the enterprise network uses ephemeral-
+   DH.)
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 2]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+3.  Enterprise Requirements for Passive (out-of-band) TLS Decryption
+
+   Enterprise networks based on this architecture have operational
+   requirements for traffic monitoring and ex post facto analysis for
+   purposes of:
+
+   o  Application troubleshooting and performance analysis
+
+   o  Fraud monitoring
+
+   o  Security, including intrusion detection, malware detection,
+      confidential data exfiltration, layer 7 DDoS protection
+
+   o  Audit compliance
+
+   o  Customer Experience Monitoring
+
+   Specific requirements to meet the listed operational requirements
+   include:
+
+   a.  TLS decryption for network security monitoring tools must be done
+       in real time with no gaps in decryption.
+
+   b.  The solution must be able to decrypt passively captured pcap
+       traces.
+
+   c.  The solution must scale to handle thousands of TLS sessions/sec.
+
+   d.  Key material must be preserved a minimum of 30 days for back-in-
+       time analysis.  This means that there will be billions of
+       ephemeral keys to manage.  If we use the average time to breach
+       detection as our guide for packet and key retention, the number
+       of ephemeral keys to manage escalates.
+
+   e.  Key material must be encrypted during network transit
+
+   f.  The solution must not negatively impact the enterprise
+       infrastructure (servers, network, etc.)
+
+   g.  The solution must be able to decrypt when a TLS session is
+       reused.  This may involve the use of a TLS decryption appliance.
+
+   h.  The solution must be able to decrypt in a physical data center,
+       in a virtual environment, and in a cloud.
+
+
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 3]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+4.  Summary of the existing Diffie-Hellman handshake
+
+   In TLS 1.3, servers exchange keys using two primary modes, Ephemeral
+   Diffie-Hellman (DHE) and Elliptic Curve Ephemeral Diffie-Hellman
+   (ECDHE).  In a simplified view of the full handshake, the following
+   steps occur:
+
+   1.  The client generates an ephemeral public and private key, and
+       transmits the public key within a "key_share" message, along with
+       a random nonce (ClientHello.random).
+   2.  The server generates an ephemeral public and private key, and
+       transmits the public key within a "key_share" message, along with
+       a random nonce (ServerHello.random).
+   3.  The two parties now calculate a shared (EC) Diffie-Hellman secret
+       by combining the other party's ephemeral public key with their
+       own ephemeral secret.
+   4.  A series of traffic and handshake keys is derived by combining
+       this shared secret with various inputs from the handshake,
+       including the ClientHello.random and ServerHello.random.
+   5.  Data encryption is performed using these keys.
+
+5.  Using static (EC) Diffie-Hellman on the server
+
+   The proposal embodied in this draft modifies the standard TLS
+   handshake summarized above in the following ways.
+
+   First, for each elliptic curve (and FF-DH parameter length) supported
+   by the server, the server is provisioned with a random static (EC)
+   Diffie- Hellman private key.  This key is generated at server
+   installation, and is rotated at periodic intervals appropriate for
+   any long-term server key.  These keys could also be generated at a
+   central key management server and distributed (in a secure encrypted
+   form) to many endpoint servers.
+
+   The static secret key is used to derive a fixed, static (EC) Diffie-
+   Hellman public key.
+
+   All steps of the original handshake proceed as above, with the
+   following modification to server behavior.  Step (2) proceeds as
+   follows:
+
+   2.  The server transmits the static public key within a "key_share"
+       message, along with a random nonce (ServerHello.random).
+
+
+
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 4]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+6.  Key Representation
+
+   Insert text here citing RFC that defines key representation format.
+
+7.  Key Distribution Protocol
+
+   Insert text here describing key ditribution protocol.
+
+8.  Alternative Solutions
+
+   1.  Export of ephemeral keys
+
+   2.  Export of decrypted traffic from TLS proxy devices at the edge of
+       the enterprise network
+
+   3.  Placement of TLS proxies in the enterprise network
+
+   4.  Reliance on TCP/IP headers not encrypted by TLS
+
+   5.  Reliance on application/server logs
+
+   6.  Doing troubleshooting and malware analysis at the endpoint.
+
+   7.  Adding a TCP or UDP extension to provide the information needed
+       to do packet analysis.
+
+9.  Weaknesses of Alternative Solutions
+
+   1.  Scale - In a large enterprise there will be billions of ephemeral
+       keys to export and manage.  There will also be difficulty in
+       getting these keys to real time tools that need decrypted
+       packets.  The complexity of the solution is a problem that adds
+       risk.
+
+   2.  Decrypted traffic at only the edge of the network is not adequate
+       for the enterprise requirements listed above (troubleshooting,
+       network security monitoring, etc...)
+
+   3.  Inline TLS proxies will not scale to the number of decryption
+       points needed within an enterprise.  Each inline proxy adds cost,
+       latency, and production risk.
+
+   4.  IP and/or TCP headers are not adequate for the enterprise
+       requirements listed above.  Troubleshooters must be able to find
+       transactions in a pcap trace, identified by markers like userids,
+       session ids, URLs, and time stamps.  Threat Detection teams must
+       be able to look for Indicators of Compromise in the payload of
+       packets, etc...
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 5]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   5.  Logging is not adequate for the enterprise requirements listed
+       above.  Code developers cannot anticipate every possible problem
+       and put a log message in just the right place.  There are
+       billions of lines of code in a data center, and it's not scalable
+       to try and improve logging.
+
+   6.  Endpoints don't have the robustness to do their own workload and
+       handle the burden of the various enterprise requirements listed
+       above.  These requirements would include always-on full packet
+       capture at the endpoint with no packet drops.
+
+   7.  An important part of troubleshooting, network security
+       monitoring, etc... is analysis of the application-specific
+       payload of the packet.  It is not possible to anticipate ahead of
+       time, among thousands of unique applications, which fields in the
+       application payload will be important.
+
+10.  Security considerations
+
+   We now consider the security implications of the change described
+   above:
+
+   a.  The shift from fully-ephemeral (EC) Diffie-Hellman to partially
+       static Diffie-Hellman affects the security properties offered by
+       the TLS 1.3 handshake by eliminating the Perfect Forward Secrecy
+       (PFS) property provided by the server.  If a server is
+       compromised and the private key is stolen, then an attacker who
+       observes any TLS handshake (even one that occurred prior to the
+       compromise) will be able to recover traffic encryption keys and
+       will be able to decrypt traffic.
+
+   b.  As long as the server static secret key is not compromised, the
+       resulting protocol will provide strong cryptographic security, as
+       long as the Diffie-Hellman parameters (e.g., finite-field group
+       or elliptic curve) are correctly generated and provide security
+       at a sufficient cryptographic security level.
+
+   c.  Replay attacks are prevented due to the fact that the server
+       generates a unique 32-byte ServerHello.random field using a
+       strong random number generator, and this value is included in the
+       traffic key derivation procedure.
+
+   d.  A flaw in the generation of finite-field Diffie-Hellman
+       parameters or the use of an insecure implementation could leak
+       some bits of the static secret key over time.  This risk is not
+       present in ephemeral DH implementations.  Implementers should use
+       care to avoid such pitfalls.
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 6]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   Thus the modification described in Section 10 represents a deliberate
+   weakening of some security properties.  Implementers who choose to
+   include this capability should carefully consider the risks to their
+   infrastructure of using a handshake without PFS.  Static secret keys
+   should be rotated regularly.
+
+11.  IANA Considerations
+
+   This document contains no actions for IANA.
+
+12.  Acknowledgements
+
+   This modification to TLS was initially suggested by Hugo Krawczyk.
+
+13.  Normative References
+
+   [I-D.ietf-tls-tls13]
+              Rescorla, E., "The Transport Layer Security (TLS) Protocol
+              Version 1.3", draft-ietf-tls-tls13-20 (work in progress),
+              April 2017.
+
+Authors' Addresses
+
+   Matthew Green
+   Cryptography Engineering LLC
+   4506 Roland Ave
+   Baltimore, MD  21210
+   USA
+
+   Email: mgreen@cryptographyengineering.com
+
+
+   Ralph Droms
+
+   Email: rdroms.ietf@gmail.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 7]

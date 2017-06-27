@@ -1,0 +1,343 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<rfc submissionType="IETF"
+     docName="draft-green-tls-static-dh-in-tls13-01"
+     category="info">
+<?rfc compact="yes"?>
+<?rfc text-list-symbols="o*+-"?>
+<?rfc subcompact="no"?>
+<?rfc sortrefs="yes"?>
+<?rfc symrefs="yes"?>
+<?rfc strict="yes"?>
+	<front>
+	<title abbrev="Data Center use of Static Diffie-Hellman">Data Center use of Static Diffie-Hellman in TLS 1.3</title>
+	<author fullname="Matthew Green" initials="M." surname="Green">
+	<organization>Cryptography Engineering LLC</organization>
+	<address><postal><street>4506 Roland Ave</street>
+	<street>Baltimore, MD  21210</street>
+	<street>USA</street>
+	</postal>
+	<email>mgreen@cryptographyengineering.com</email>
+	</address>
+	</author>
+
+	<author fullname="Ralph Droms" initials="R." surname="Droms">
+	  <organization />
+	  <address>
+	    <email>rdroms.ietf@gmail.com</email>
+	  </address>
+	</author>
+
+	<date day="31" month="October" year="2016"/>
+	<abstract><t>
+   Unlike earlier versions of TLS, current drafts of TLS 1.3 have
+   instead adopted ephemeral-mode Diffie-Hellman and elliptic-curve
+   Diffie-Hellman as the primary cryptographic key exchange mechanism
+   used in TLS. This document describes an optional configuration for
+   TLS servers that allows for the use of a static Diffie-Hellman secret
+   for all TLS connections made to the server. Passive monitoring of TLS
+   connections can be enabled by installing a corresponding copy of this
+   key in each monitoring device.</t>
+
+	</abstract>
+	</front>
+
+	<middle>
+	<section title="Introduction" anchor="section-1"><t>
+   Unlike earlier versions of TLS, current drafts of TLS 1.3 <xref
+   target="I-D.ietf-tls-tls13" /> do not provide support for the RSA handshake --
+   and have instead adopted ephemeral-mode Diffie-Hellman and elliptic-
+   curve Diffie-Hellman as the primary cryptographic key exchange
+   mechanism used in TLS.</t>
+
+	<t>While ephemeral (EC) Diffie-Hellman is in nearly all ways
+	an improvement over the TLS RSA handshake, it has a limitation
+	in certain enterprise settings. Specifically, the use of
+	ephemeral (PFS) ciphersuites is not compatible with enterprise
+	network monitoring tools such as the use ofIntrusion Detection
+	Systems (IDS) and application monitoring systems to meet
+	regulatory auditing requirements that must passively monitor
+	intranet TLS connections made to endpoints under the
+	enterprise's control. This traffic includes TLS connections
+	made from enterprise network security devices (firewalls) and
+	load balancers at the edge of the enterprise network to
+	internal enterprise TLS servers. It does not include TLS
+	connections traveling over the external Internet.</t>
+
+	<t>Such monitoring is ubiquitous, indispensable and required
+	by law in some industries. While this monitoring might be
+	considered pervasive monitoring and an attack on the open
+	Internet, it is required for effective, safe and legal
+	operation of enterprise networks. Loss of this capability may
+	slow adoption of TLS 1.3.</t>
+
+	<t>
+   This document describes an optional configuration for TLS servers
+   that allows for the use of a static Diffie-Hellman secret for all TLS
+   connections made to the server. Passive monitoring of TLS connections
+   can be enabled by installing a corresponding copy of this key in each
+   monitoring device.</t>
+
+	<t>
+   An advantage of this proposal is that it can be implemented using
+   software modifications to the TLS server only, without the need to
+   make changes to TLS client implementations.</t>
+
+	</section>
+
+	<section title="Enterprise TLS Decryption Architecture">
+
+	  <t>(Insert high-level ASCII-art picture here, emphasizing
+	  that the traffic that uses static-DH is contained entirely
+	  in the enterprise network, while traffic outside the
+	  enterprise network uses ephemeral-DH.)</t>
+
+	</section>
+
+	<section title="Enterprise Requirements for Passive
+			(out-of-band) TLS Decryption">
+	  <t>Enterprise networks based on this architecture have
+	  operational requirements for traffic monitoring and ex post
+	  facto analysis for purposes of:</t>
+
+	  <t><list style="symbols">
+	   <t>Application troubleshooting and performance analysis</t>
+	   <t>Fraud monitoring</t>
+	   <t>Security, including intrusion detection, malware
+	   detection, confidential data exfiltration, layer 7 DDoS
+	   protection</t>
+	   <t>Audit compliance</t>
+	   <t>Customer Experience Monitoring</t>
+	  </list></t>
+
+	  <t>Specific requirements to meet the listed operational
+	  requirements include:</t>
+
+	  <t><list style="letters">
+	   <t>TLS decryption for network security monitoring tools
+	   must be done in real time with no gaps in decryption.</t>
+	   
+	   <t>The solution must be able to decrypt passively captured
+	   pcap traces.</t> 
+	   <t>The solution must scale to handle thousands of TLS
+	   sessions/sec.</t> 
+	   <t>Key material must be preserved a minimum of 30 days for
+	   back-in-time analysis.  This means that there will be
+	   billions of ephemeral keys to manage.  If we use the
+	   average time to breach detection as our guide for packet
+	   and key retention, the number of ephemeral keys to manage
+	   escalates.</t> 
+	   <t>Key material must be encrypted during network transit</t>
+	   <t>The solution must not negatively impact the enterprise
+	   infrastructure (servers, network, etc.)</t> 
+	   <t>The solution must be able to decrypt when a TLS session
+	   is reused.  This may involve the use of a TLS decryption
+	   appliance.</t> 
+	   <t>The solution must be able to decrypt in a physical data
+	   center, in a virtual environment, and in a cloud.</t> 
+	  </list></t>
+
+	</section>
+
+
+
+	<section title="Summary of the existing Diffie-Hellman handshake" anchor="section-2"><t>
+   In TLS 1.3, servers exchange keys using two primary modes, Ephemeral
+   Diffie-Hellman (DHE) and Elliptic Curve Ephemeral Diffie-Hellman
+   (ECDHE). In a simplified view of the full handshake, the following
+   steps occur:
+
+	<list style="numbers"><?rfc subcompact="yes"?>
+	<t>The client generates an ephemeral public and private key,
+         and transmits the public key within a "key_share" message,
+         along with a random nonce (ClientHello.random).</t>
+
+	<t>The server generates an ephemeral public and private key,
+         and transmits the public key within a "key_share" message,
+         along with a random nonce (ServerHello.random).</t>
+
+	<t>The two parties now calculate a shared (EC) Diffie-Hellman
+         secret by combining the other party's ephemeral public key
+         with their own ephemeral secret.</t>
+
+	<t>A series of traffic and handshake keys is derived by
+         combining this shared secret with various inputs from the
+         handshake, including the ClientHello.random and
+         ServerHello.random.</t>
+
+	<t>Data encryption is performed using these keys.</t>
+
+	<?rfc subcompact="no"?>
+	</list>
+      </t>
+	</section>
+
+	<section title="Using static (EC) Diffie-Hellman on the server" anchor="section-3"><t>
+   The proposal embodied in this draft modifies the standard TLS
+   handshake summarized above in the following ways.</t>
+
+	<t>
+   First, for each elliptic curve (and FF-DH parameter length) supported
+   by the server, the server is provisioned with a random static (EC)
+   Diffie- Hellman private key. This key is generated at server
+   installation, and is rotated at periodic intervals appropriate for
+   any long-term server key. These keys could also be generated at a
+   central key management server and distributed (in a secure encrypted
+   form) to many endpoint servers.</t>
+
+	<t>
+   The static secret key is used to derive a fixed, static (EC) Diffie-
+   Hellman public key.</t>
+
+	<t>
+   All steps of the original handshake proceed as above, with the
+   following modification to server behavior. Step (2) proceeds as
+   follows:</t>
+
+   <t><list style="hanging" hangIndent="4">
+     <t hangText="2."> The server transmits the static public key within a "key_share"
+         message, along with a random nonce (ServerHello.random).</t>
+
+	</list>
+	</t>
+
+	</section>
+
+	<section title="Key Representation">
+
+	  <t>Insert text here citing RFC that defines key
+	  representation format.</t>
+
+	</section>
+
+	<section title="Key Distribution Protocol">
+
+	  <t>Insert text here describing key ditribution protocol.</t>
+
+	</section>
+
+	<section title="Alternative Solutions">
+	  <t><list style="numbers">
+	    <t>Export of ephemeral keys</t> 
+	    <t>Export of decrypted traffic from TLS proxy devices at
+	    the edge of the enterprise network</t> 
+	    <t>Placement of TLS proxies in the enterprise network</t> 
+	    <t>Reliance on TCP/IP headers not encrypted by TLS</t> 
+	    <t>Reliance on application/server logs</t> 
+	    <t>Doing troubleshooting and malware analysis at the
+	    endpoint.</t> 
+	    <t>Adding a TCP or UDP extension to provide the
+	    information needed to do packet analysis.</t> 
+	  </list></t>
+
+	</section>
+
+	<section title="Weaknesses of Alternative Solutions">
+
+	  <t><list style="numbers">
+	    <t>Scale – In a large enterprise there will be billions of
+	    ephemeral keys to export and manage.  There will also be
+	    difficulty in getting these keys to real time tools that
+	    need decrypted packets.  The complexity of the solution is
+	    a problem that adds risk.</t> 
+	    <t>Decrypted traffic at only the edge of the network is
+	    not adequate for the enterprise requirements listed above
+	    (troubleshooting, network security monitoring, etc…)</t> 
+	    <t>Inline TLS proxies will not scale to the number of
+	    decryption points needed within an enterprise.  Each
+	    inline proxy adds cost, latency, and production risk.</t> 
+	    <t>IP and/or TCP headers are not adequate for the
+	    enterprise requirements listed above.  Troubleshooters
+	    must be able to find transactions in a pcap trace,
+	    identified by markers like userids, session ids, URLs, and
+	    time stamps.  Threat Detection teams must be able to look
+	    for Indicators of Compromise in the payload of packets,
+	    etc…</t> 
+	    <t>Logging is not adequate for the enterprise requirements
+	    listed above.  Code developers cannot anticipate every
+	    possible problem and put a log message in just the right
+	    place.  There are billions of lines of code in a data
+	    center, and it’s not scalable to try and improve
+	    logging.</t> 
+	    <t>Endpoints don’t have the robustness to do their own
+	    workload and handle the burden of the various enterprise
+	    requirements listed above.  These requirements would
+	    include always-on full packet capture at the endpoint with
+	    no packet drops.</t> 
+	    <t>An important part of troubleshooting, network security
+	    monitoring, etc… is analysis of the application-specific
+	    payload of the packet.  It is not possible to anticipate
+	    ahead of time, among thousands of unique applications,
+	    which fields in the application payload will be
+	    important.</t> 
+	  </list></t>
+
+	</section>
+	
+	<section title="Security considerations" anchor="section-4"><t>
+   We now consider the security implications of the change described
+   above:</t>
+
+	<t><list style="letters"><t>The shift from fully-ephemeral (EC) Diffie-Hellman to partially
+      static Diffie-Hellman affects the security properties offered by
+      the TLS 1.3 handshake by eliminating the Perfect Forward Secrecy
+      (PFS) property provided by the server. If a server is compromised
+      and the private key is stolen, then an attacker who observes any
+      TLS handshake (even one that occurred prior to the compromise)
+      will be able to recover traffic encryption keys and will be able
+      to decrypt traffic.</t>
+
+      <t>As long as the server static secret key is not compromised, the
+	resulting protocol will provide strong cryptographic security, as
+      long as the Diffie-Hellman parameters (e.g., finite-field group or
+      elliptic curve) are correctly generated and provide security at a
+      sufficient cryptographic security level.
+	</t>
+
+	<t>Replay attacks are prevented due to the fact that the server
+	generates a unique 32-byte ServerHello.random field using a strong
+      random number generator, and this value is included in the traffic
+      key derivation procedure.
+	</t>
+
+	<t>A flaw in the generation of finite-field Diffie-Hellman
+	parameters or the use of an insecure implementation could leak
+      some bits of the static secret key over time. This risk is not
+      present in ephemeral DH implementations. Implementers should use
+      care to avoid such pitfalls.
+	</t>
+
+	</list>
+	</t>
+
+ 	<t>
+   Thus the modification described in <xref target="section-4"/> represents a deliberate
+   weakening of some security properties. Implementers who choose to
+   include this capability should carefully consider the risks to their
+   infrastructure of using a handshake without PFS. Static secret keys
+   should be rotated regularly.</t>
+
+	</section>
+
+	<section title="IANA Considerations" anchor="section-5"><t>
+   This document contains no actions for IANA.</t>
+
+	</section>
+
+	<section title="Acknowledgements" anchor="section-6"><t>
+   This modification to TLS was initially suggested by Hugo Krawczyk.</t>
+
+	</section>
+
+	</middle>
+
+	<back>
+	<references title="Normative References">
+
+      <?rfc include="reference.I-D.ietf-tls-tls13" ?>
+
+	</references>
+	</back>
+
+	</rfc>
+	
