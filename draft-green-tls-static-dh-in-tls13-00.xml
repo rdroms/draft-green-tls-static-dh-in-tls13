@@ -34,7 +34,8 @@
 
 	<middle>
 	<section title="Introduction" anchor="section-1"><t>
-   Unlike earlier versions of TLS, current drafts of TLS 1.3 [draft-ietf-tls-tls13-18] do not provide support for the RSA handshake --
+   Unlike earlier versions of TLS, current drafts of TLS 1.3 <xref
+   target="I-D.ietf-tls-tls13" /> do not provide support for the RSA handshake --
    and have instead adopted ephemeral-mode Diffie-Hellman and elliptic-
    curve Diffie-Hellman as the primary cryptographic key exchange
    mechanism used in TLS.</t>
@@ -202,10 +203,9 @@
 
 	<back>
 	<references title="Normative References">
-	<reference><front>
-	</front>
 
-	</reference>
+      <?rfc include="reference.I-D.ietf-tls-tls13" ?>
+
 	</references>
 	</back>
 
