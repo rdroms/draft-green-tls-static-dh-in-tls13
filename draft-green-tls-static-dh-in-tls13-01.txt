@@ -4,7 +4,7 @@
 
 Network Working Group                                           M. Green
 Internet-Draft                              Cryptography Engineering LLC
-Intended status: Informational                                  R. Droms
+Intended status: Standards Track                                R. Droms
 Expires: May 4, 2017                                    October 31, 2016
 
 
