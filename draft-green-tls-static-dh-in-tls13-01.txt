@@ -232,13 +232,11 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
 7.  TLS Static DH Key (TSK) Protocol
 
-   Insert text here describing key ditribution protocol.
-
    The two main roles in the TSK protocol are "key manager" and "key
    consumer".  Key consumers can be TLS servers or TLS decrypters.  The
    key manager generates, distributes, and tracks static (EC)DH keys
    used by key consumers.  TSK messaging is based on HTTPS [RFC2818].
-   Keys are transferred as Asymmetric Key Packages [RFC5958] described 
+   Keys are transferred as Asymmetric Key Packages [RFC5958] described
    in Section 6 of this document.
 
 
@@ -274,6 +272,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
             |       Push key pair     |                        |
 
                      Figure 2: TSK protocol push model
+
 
 
 
@@ -321,7 +320,6 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    Example:
 
       GET /tsk/key/PublicKeyFingerprint
-
       Accept: [application/pkcs8 or application/cms]
 
    The response to the TSK push is composed of the appropriate HTTP
@@ -331,6 +329,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    The Content-Type header MUST be application/cms [RFC 7193] if the
    Asymmetric Key Package is encrypted with CMS [RFC 6032].  The
    Content-Type header MUST be application/pkcs8 if the
+
 
 
 

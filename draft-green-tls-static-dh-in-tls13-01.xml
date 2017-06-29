@@ -203,7 +203,7 @@
 
 	</section>
 
-	<section title="Key Representation">
+	<section title="Key Representation" anchor="keyrep">
 
 	  <t>Insert text here citing RFC that defines key
 	  representation format.</t>
@@ -212,15 +212,14 @@
 
 	<section title="TLS Static DH Key (TSK) Protocol">
 
-	  <t>Insert text here describing key ditribution protocol.</t>
-
 	  <t>The two main roles in the TSK protocol are "key manager"
 	  and "key consumer". Key consumers can be TLS servers or TLS
 	  decrypters. The key manager generates, distributes, and
 	  tracks static (EC)DH keys used by key consumers. TSK
 	  messaging is based on HTTPS <xref target="RFC2818" />. Keys
 	  are transferred as Asymmetric Key Packages
-	  <xref target="RFC5958" />.</t>
+	  <xref target="RFC5958" /> described in <xref target="keyrep"
+	  /> of this document.</t>
 	  
           <figure align="center" anchor="TSK-1"
 		  title="TSK protocol components">
@@ -307,9 +306,11 @@
 	    being requested.</t>
 
 	    <t>Example:
-	    <list style="empty">	    
+	    <list style="empty">
+	      <?rfc subcompact="yes"?>	    
 	      <t>GET /tsk/key/PublicKeyFingerprint</t>
 	      <t>Accept: [application/pkcs8 or application/cms]</t>
+	      <?rfc subcompact="no"?>
 	    </list>
 	    </t>
 	    
