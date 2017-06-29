@@ -228,7 +228,77 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
 6.  Key Representation
 
-   Insert text here citing RFC that defines key representation format.
+   The asymmetric key package [RFC5958] MUST be used to transfer the
+   centrally managed Diffie-Hellman key pair.  The key package contains
+   at least one Diffie-Hellman key pair.  Each Diffie-Hellman key pair
+   is associated with a set of attributes, including the key validity
+   period for that Diffie-Hellman key pair.
+
+   OneAsymmetricKey is defined in Section 2 of [RFC5958].  The fields
+   are used as follows:
+
+         version MUST be set to v2, which has an integer value of 1.
+
+         privateKeyAlgorithm MUST be set to the algorithm identifier of
+         the Diffie-Hellman key pair.  For convenience, some popular
+         algorithm identifiers are listed in Table 1.
+
+         privateKey MUST be set to the Diffie-Hellman private key
+         encoded as an OCTET STRING.
+
+         attributes MUST be included even though the field is optional.
+         The set of attributes MUST include the key validity period
+         attribute defined in Section 15 of [RFC7906].  Other attributes
+         MAY be included as well.
+
+         publicKey MUST be included even though the field is optional.
+         It MUST be set to the Diffie-Hellman public key, encoded as a
+         BIT STRING.  This is the same BIT STRING that would be included
+         in an X.509 certificate [RFC5280] for this public key.
+
+   +-------------------------------------------------------------------+
+   |                                                                   |
+   | Finite Field Diffie-Hellman                                       |
+   |  object identifier: { 1 2 840 10046 2 1 }                         |
+   |  parameter encoding: DomainParameters, Section 2.3.3 of [RFC3279] |
+   |  private key encoding: INTEGER                                    |
+   |  public key encoding: INTEGER                                     |
+   |                                                                   |
+   | Elliptic Curve Diffie-Hellman                                     |
+   |  object identifier: { 1 3 132 1 12 }                              |
+   |  parameter encoding: ECParameters, Section 2.1.2 of [RFC5480]     |
+   |                         (MUST use the namedCurve CHOICE)          |
+   |  private key encoding: ECPrivateKey, Section 3 of [RFC5915]       |
+   |  public key encoding:  ECPoint, Section 2.2 of [RFC5480]          |
+   |                                                                   |
+   +-------------------------------------------------------------------+
+
+          Figure 1: Popular Diffie-Hellman Algorithm Identifiers
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 5]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   The CMS protecting content types [RFC5652][RFC5083] can be used to
+   provide authentication and confidentiality protection for the
+   Asymmetric Key Package:
+
+   o  SignedData can be used to apply a digital signature to the
+      Asymmetric Key Package.
+
+   o  EncryptedData can be used to encrypt the Asymmetric Key Package
+      with previously distributed symmetric encryption key.
+
+   o  EnvelopedData can be used to encrypt the Asymmetric Key Package,
+      where the sender and the receiver establish a symmetric encryption
+      key using Diffie-Hellman key agreement.
+
+   o  AuthEnvelopedData can be used to protect the Asymmetric Key
+      Package where the sender and the receiver establish a symmetric
+      authenticated encryption key using Diffie-Hellman key agreement.
 
 7.  TLS Static DH Key (TSK) Protocol
 
@@ -255,9 +325,18 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
                     | TLS client |
                     --------------
 
-                     Figure 1: TSK protocol components
+                     Figure 2: TSK protocol components
 
    The key manager can push keys to key consumers:
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 6]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
 
         TLS server               key manager             TLS decrypter
             |                         |                        |
@@ -271,16 +350,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
             |<------------------------|                        |
             |       Push key pair     |                        |
 
-                     Figure 2: TSK protocol push model
-
-
-
-
-
-Green & Droms              Expires May 4, 2017                  [Page 5]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
-
+                     Figure 3: TSK protocol push model
 
    Alternatively, key consumers can request (or pull) keys from the key
    manager.
@@ -297,7 +367,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
             |<------------------------|                        |
             |     Request key pair    |                        |
 
-                     Figure 3: TSK protocol pull model
+                     Figure 4: TSK protocol pull model
 
 7.1.  Key Push
 
@@ -317,6 +387,13 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    the key consumer is authorized to receive a copy of the key being
    requested.
 
+
+
+Green & Droms              Expires May 4, 2017                  [Page 7]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
    Example:
 
       GET /tsk/key/PublicKeyFingerprint
@@ -329,15 +406,6 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    The Content-Type header MUST be application/cms [RFC 7193] if the
    Asymmetric Key Package is encrypted with CMS [RFC 6032].  The
    Content-Type header MUST be application/pkcs8 if the
-
-
-
-
-Green & Droms              Expires May 4, 2017                  [Page 6]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
-
-
    AsymmetricKeyPackage is transferred in plain text (within the
    encrypted HTTPS stream).
 
@@ -375,6 +443,13 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
        points needed within an enterprise.  Each inline proxy adds cost,
        latency, and production risk.
 
+
+
+Green & Droms              Expires May 4, 2017                  [Page 8]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
    4.  IP and/or TCP headers are not adequate for the enterprise
        requirements listed above.  Troubleshooters must be able to find
        transactions in a pcap trace, identified by markers like userids,
@@ -385,15 +460,6 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    5.  Logging is not adequate for the enterprise requirements listed
        above.  Code developers cannot anticipate every possible problem
        and put a log message in just the right place.  There are
-
-
-
-
-Green & Droms              Expires May 4, 2017                  [Page 7]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
-
-
        billions of lines of code in a data center, and it's not scalable
        to try and improve logging.
 
@@ -433,6 +499,13 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
        strong random number generator, and this value is included in the
        traffic key derivation procedure.
 
+
+
+Green & Droms              Expires May 4, 2017                  [Page 9]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
    d.  A flaw in the generation of finite-field Diffie-Hellman
        parameters or the use of an insecure implementation could leak
        some bits of the static secret key over time.  This risk is not
@@ -442,14 +515,6 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    Thus the modification described in Section 10 represents a deliberate
    weakening of some security properties.  Implementers who choose to
    include this capability should carefully consider the risks to their
-
-
-
-Green & Droms              Expires May 4, 2017                  [Page 8]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
-
-
    infrastructure of using a handshake without PFS.  Static secret keys
    should be rotated regularly.
 
@@ -490,21 +555,14 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
               cms Media Type", RFC 7193, DOI 10.17487/RFC7193, April
               2014, <http://www.rfc-editor.org/info/rfc7193>.
 
-Authors' Addresses
 
 
-
-
-
-
-
-
-
-
-Green & Droms              Expires May 4, 2017                  [Page 9]
+Green & Droms              Expires May 4, 2017                 [Page 10]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
+
+Authors' Addresses
 
    Matthew Green
    Cryptography Engineering LLC
@@ -555,6 +613,4 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
 
 
-
-
-Green & Droms              Expires May 4, 2017                 [Page 10]
+Green & Droms              Expires May 4, 2017                 [Page 11]
