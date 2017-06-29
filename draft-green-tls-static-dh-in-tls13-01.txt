@@ -230,9 +230,116 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
    Insert text here citing RFC that defines key representation format.
 
-7.  Key Distribution Protocol
+7.  TLS Static DH Key (TSK) Protocol
 
    Insert text here describing key ditribution protocol.
+
+   The two main roles in the TSK protocol are "key manager" and "key
+   consumer".  Key consumers can be TLS servers or TLS decrypters.  The
+   key manager generates, distributes, and tracks static (EC)DH keys
+   used by key consumers.  TSK messaging is based on HTTPS [RFC2818].
+   Keys are transferred as Asymmetric Key Packages [RFC5958].
+
+
+                    --------------       -----------------
+                    | TLS server |-------|  key manager  |
+                    --------------       -----------------
+                           |                     |
+                           |                     |
+                           |                     |
+                           |             -----------------
+                           |------------>| TLS decrypter |
+                           |             -----------------
+                           |
+                           |
+                    --------------
+                    | TLS client |
+                    --------------
+
+                     Figure 1: TSK protocol components
+
+   The key manager can push keys to key consumers:
+
+        TLS server               key manager             TLS decrypter
+            |                         |                        |
+            |                         |--                      |
+            |                         |  \ Generate            |
+            |                         |  / key pair            |
+            |                         |<-                      |
+            |                         |                        |
+            |                         |----------------------->|
+            |                         |      Push key pair     |
+            |<------------------------|                        |
+            |       Push key pair     |                        |
+
+                     Figure 2: TSK protocol push model
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 5]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   Alternatively, key consumers can request (or pull) keys from the key
+   manager.
+
+        TLS server               key manager             TLS decrypter
+            |                         |                        |
+            |                         |--                      |
+            |                         |  \ Generate            |
+            |                         |  / key pair            |
+            |                         |<-                      |
+            |                         |                        |
+            |                         |----------------------->|
+            |                         |    Request key pair    |
+            |<------------------------|                        |
+            |     Request key pair    |                        |
+
+                     Figure 3: TSK protocol pull model
+
+7.1.  Key Push
+
+   An HTTPS-based TSK push is composed of the appropriate HTTP headers,
+   followed by the binary value of the BER (Basic Encoding Rules)
+   encoding of either a Simple or Full PKI Response.>
+
+   The Content-Type header MUST be application/cms [RFC7193] if the
+   Asymmetric Key Package is encrypted with CMS [RFC6032].  The Content-
+   Type header MUST be application/pkcs8 if the AsymmetricKeyPackage is
+   transferred in plain text (within the encrypted HTTPS stream).
+
+7.2.  Key Request
+
+   A key consumer may request a key by providing a fingerprint [RFC6234]
+   of the public key.  The key manager is responsible for determining if
+   the key consumer is authorized to receive a copy of the key being
+   requested.
+
+   Example:
+
+      GET /tsk/key/PublicKeyFingerprint
+
+      Accept: [application/pkcs8 or application/cms]
+
+   The response to the TSK push is composed of the appropriate HTTP
+   headers, followed by the binary value of the BER (Basic Encoding
+   Rules) encoding of either a Simple or Full PKI Response.
+
+   The Content-Type header MUST be application/cms [RFC 7193] if the
+   Asymmetric Key Package is encrypted with CMS [RFC 6032].  The
+   Content-Type header MUST be application/pkcs8 if the
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 6]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
+
+   AsymmetricKeyPackage is transferred in plain text (within the
+   encrypted HTTPS stream).
 
 8.  Alternative Solutions
 
@@ -275,16 +382,18 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
        be able to look for Indicators of Compromise in the payload of
        packets, etc...
 
+   5.  Logging is not adequate for the enterprise requirements listed
+       above.  Code developers cannot anticipate every possible problem
+       and put a log message in just the right place.  There are
 
 
-Green & Droms              Expires May 4, 2017                  [Page 5]
+
+
+Green & Droms              Expires May 4, 2017                  [Page 7]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
 
-   5.  Logging is not adequate for the enterprise requirements listed
-       above.  Code developers cannot anticipate every possible problem
-       and put a log message in just the right place.  There are
        billions of lines of code in a data center, and it's not scalable
        to try and improve logging.
 
@@ -330,17 +439,17 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
        present in ephemeral DH implementations.  Implementers should use
        care to avoid such pitfalls.
 
+   Thus the modification described in Section 10 represents a deliberate
+   weakening of some security properties.  Implementers who choose to
+   include this capability should carefully consider the risks to their
 
 
 
-Green & Droms              Expires May 4, 2017                  [Page 6]
+Green & Droms              Expires May 4, 2017                  [Page 8]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
 
 
-   Thus the modification described in Section 10 represents a deliberate
-   weakening of some security properties.  Implementers who choose to
-   include this capability should carefully consider the risks to their
    infrastructure of using a handshake without PFS.  Static secret keys
    should be rotated regularly.
 
@@ -359,7 +468,43 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
               Version 1.3", draft-ietf-tls-tls13-20 (work in progress),
               April 2017.
 
+   [RFC2818]  Rescorla, E., "HTTP Over TLS", RFC 2818,
+              DOI 10.17487/RFC2818, May 2000,
+              <http://www.rfc-editor.org/info/rfc2818>.
+
+   [RFC5958]  Turner, S., "Asymmetric Key Packages", RFC 5958,
+              DOI 10.17487/RFC5958, August 2010,
+              <http://www.rfc-editor.org/info/rfc5958>.
+
+   [RFC6032]  Turner, S. and R. Housley, "Cryptographic Message Syntax
+              (CMS) Encrypted Key Package Content Type", RFC 6032,
+              DOI 10.17487/RFC6032, December 2010,
+              <http://www.rfc-editor.org/info/rfc6032>.
+
+   [RFC6234]  Eastlake 3rd, D. and T. Hansen, "US Secure Hash Algorithms
+              (SHA and SHA-based HMAC and HKDF)", RFC 6234,
+              DOI 10.17487/RFC6234, May 2011,
+              <http://www.rfc-editor.org/info/rfc6234>.
+
+   [RFC7193]  Turner, S., Housley, R., and J. Schaad, "The application/
+              cms Media Type", RFC 7193, DOI 10.17487/RFC7193, April
+              2014, <http://www.rfc-editor.org/info/rfc7193>.
+
 Authors' Addresses
+
+
+
+
+
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                  [Page 9]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
+
 
    Matthew Green
    Cryptography Engineering LLC
@@ -389,4 +534,27 @@ Authors' Addresses
 
 
 
-Green & Droms              Expires May 4, 2017                  [Page 7]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Green & Droms              Expires May 4, 2017                 [Page 10]

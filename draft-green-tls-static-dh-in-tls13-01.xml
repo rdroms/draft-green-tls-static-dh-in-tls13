@@ -210,10 +210,123 @@
 
 	</section>
 
-	<section title="Key Distribution Protocol">
+	<section title="TLS Static DH Key (TSK) Protocol">
 
 	  <t>Insert text here describing key ditribution protocol.</t>
 
+	  <t>The two main roles in the TSK protocol are "key manager"
+	  and "key consumer". Key consumers can be TLS servers or TLS
+	  decrypters. The key manager generates, distributes, and
+	  tracks static (EC)DH keys used by key consumers. TSK
+	  messaging is based on HTTPS <xref target="RFC2818" />. Keys
+	  are transferred as Asymmetric Key Packages
+	  <xref target="RFC5958" />.</t>
+	  
+          <figure align="center" anchor="TSK-1"
+		  title="TSK protocol components">
+            <artwork align="center"><![CDATA[
+
+    --------------       -----------------
+    | TLS server |-------|  key manager  |
+    --------------       -----------------
+           |                     |
+           |                     |
+           |                     |
+           |             -----------------
+           |------------>| TLS decrypter |
+           |             -----------------
+           |
+           |
+    --------------
+    | TLS client |
+    --------------
+    ]]></artwork>
+        </figure>
+
+    <t>The key manager can push keys to key consumers: </t>
+    
+          <figure align="center" anchor="TSK-2"
+		  title="TSK protocol push model">
+            <artwork align="center"><![CDATA[
+    TLS server               key manager             TLS decrypter
+        |                         |                        |
+        |                         |--                      |
+        |                         |  \ Generate            |
+        |                         |  / key pair            |
+        |                         |<-                      |
+        |                         |                        |
+        |                         |----------------------->|
+        |                         |      Push key pair     |
+        |<------------------------|                        |
+        |       Push key pair     |                        |
+    ]]></artwork>
+        </figure>
+    
+
+    <t>Alternatively, key consumers can request (or pull) keys from the
+    key manager. </t>
+
+              <figure align="center" anchor="TSK-3"
+		  title="TSK protocol pull model">
+            <artwork align="center"><![CDATA[
+    TLS server               key manager             TLS decrypter
+        |                         |                        |
+        |                         |--                      |
+        |                         |  \ Generate            |
+        |                         |  / key pair            |
+        |                         |<-                      |
+        |                         |                        |
+        |                         |----------------------->|
+        |                         |    Request key pair    |
+        |<------------------------|                        |
+        |     Request key pair    |                        |
+    ]]></artwork>
+        </figure>
+
+	  <section title="Key Push">
+
+	    <t>An HTTPS-based TSK push is composed of the
+	    appropriate HTTP headers, followed by the binary value of
+	    the BER (Basic Encoding Rules) encoding of either a Simple
+	    or Full PKI Response.></t>
+	    
+	    <t>The Content-Type header MUST be application/cms <xref
+	    target="RFC7193" /> if the Asymmetric Key Package is
+	    encrypted with CMS <xref target="RFC6032" />. The
+	    Content-Type header MUST be application/pkcs8 if the
+	    AsymmetricKeyPackage is transferred in plain text (within
+	    the encrypted HTTPS stream).</t>
+	  </section>
+	  
+	  <section title="Key Request">
+
+	    <t>A key consumer may request a key by providing a
+	    fingerprint <xref target="RFC6234" /> of the public
+	    key. The key manager is responsible for determining if the
+	    key consumer is authorized to receive a copy of the key
+	    being requested.</t>
+
+	    <t>Example:
+	    <list style="empty">	    
+	      <t>GET /tsk/key/PublicKeyFingerprint</t>
+	      <t>Accept: [application/pkcs8 or application/cms]</t>
+	    </list>
+	    </t>
+	    
+	    <t>The response to the TSK push is composed of the
+	    appropriate HTTP headers, followed by the binary value of
+	    the BER (Basic Encoding Rules) encoding of either a Simple
+	    or Full PKI Response.</t>
+	    
+	    <t>The Content-Type header MUST be application/cms [RFC
+	    7193] if the Asymmetric Key Package is encrypted with CMS
+	    [RFC 6032]. The Content-Type header MUST be
+	    application/pkcs8 if the AsymmetricKeyPackage is
+	    transferred in plain text (within the encrypted HTTPS
+	    stream).</t>
+
+	  </section>
+	    
 	</section>
 
 	<section title="Alternative Solutions">
@@ -334,6 +447,11 @@
 	<back>
 	<references title="Normative References">
 
+	  <?rfc include="reference.RFC.2818" ?>
+	  <?rfc include="reference.RFC.5958" ?>
+	  <?rfc include="reference.RFC.6032" ?>
+	  <?rfc include="reference.RFC.6234" ?>
+	  <?rfc include="reference.RFC.7193" ?>	  
       <?rfc include="reference.I-D.ietf-tls-tls13" ?>
 
 	</references>
