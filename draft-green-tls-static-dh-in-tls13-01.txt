@@ -238,7 +238,8 @@ Internet-Draft  Data Center use of Static Diffie-Hellman    October 2016
    consumer".  Key consumers can be TLS servers or TLS decrypters.  The
    key manager generates, distributes, and tracks static (EC)DH keys
    used by key consumers.  TSK messaging is based on HTTPS [RFC2818].
-   Keys are transferred as Asymmetric Key Packages [RFC5958].
+   Keys are transferred as Asymmetric Key Packages [RFC5958] described 
+   in Section 6 of this document.
 
 
                     --------------       -----------------
