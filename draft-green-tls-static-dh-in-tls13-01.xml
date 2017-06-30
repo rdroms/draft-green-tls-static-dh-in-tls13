@@ -9,6 +9,8 @@
 <?rfc sortrefs="yes"?>
 <?rfc symrefs="yes"?>
 <?rfc strict="yes"?>
+<?rfc toc="yes"?>
+
 <front>
   <title abbrev="Data Center use of Static Diffie-Hellman">Data Center use of Static Diffie-Hellman in TLS 1.3</title>
   <author fullname="Matthew Green" initials="M." surname="Green">
@@ -22,7 +24,7 @@
   </author>
   
   <author fullname="Ralph Droms" initials="R." surname="Droms">
-    <organization />
+    <organization>(Unaffiliated)</organization>
     <address>
       <email>rdroms.ietf@gmail.com</email>
     </address>
@@ -36,13 +38,13 @@
 	<city>Herndon</city>
 	<region>VA</region>
 	<code>20170</code>
-	<country>USA></country>
+	<country>USA</country>
       </postal>
       <email>housley@vigilsec.com</email>
     </address>
   </author>
 
-  <author fullname="Paul Turner" initials="P." surname="Venafi">
+  <author fullname="Paul Turner" initials="P." surname="Turner">
     <organization>Venafi</organization>
     <address>
       <postal>
@@ -53,6 +55,13 @@
 	<country>USA</country>
       </postal>
       <email>paul.turner@venafi.com</email>
+    </address>
+  </author>
+
+  <author fullname ="Steve Fenter" initials="S." surname="Fenter">
+    <organization>USBank</organization>
+    <address>
+      <email>steven.fenter@usbank.com</email>
     </address>
   </author>
  
@@ -72,52 +81,73 @@
 </front>
 
 <middle>
-  <section title="Introduction" anchor="section-1"><t>
-   Unlike earlier versions of TLS, current drafts of TLS 1.3 <xref
-   target="I-D.ietf-tls-tls13" /> do not provide support for the RSA handshake --
-   and have instead adopted ephemeral-mode Diffie-Hellman and elliptic-
-   curve Diffie-Hellman as the primary cryptographic key exchange
-   mechanism used in TLS.</t>
+  <section title="Introduction" anchor="section-1">
 
-   <t>While ephemeral (EC) Diffie-Hellman is in nearly all ways an
-   improvement over the TLS RSA handshake, it has a limitation in
-   certain enterprise settings. Specifically, the use of ephemeral
-   ciphersuites that provide Forward Secrecy is not compatible with
-   enterprise network monitoring tools such as the use of Intrusion
-   Detection Systems (IDS) and application monitoring systems to meet
-   regulatory auditing requirements that must passively monitor
-   intranet TLS connections made to endpoints under the enterprise's
-   control. This traffic includes TLS connections made from enterprise
-   network security devices (firewalls) and load balancers at the edge
-   of the enterprise network to internal enterprise TLS servers. It
-   does not include TLS connections traveling over the external
-   Internet.</t>
+    <t>Unlike earlier versions of TLS, current drafts of TLS 1.3 <xref
+    target="I-D.ietf-tls-tls13" /> do not provide support for the RSA
+    handshake -- and have instead adopted ephemeral-mode
+    Diffie-Hellman (DHE) and elliptic-curve Diffie-Hellman (ECDHE) as
+    the primary cryptographic key exchange mechanism used in TLS.</t>
 
-   <t>Such monitoring is ubiquitous, indispensable and required by law
-   in some industries. This monitoring is
-   required for effective, safe and legal operation of enterprise
-   networks. Loss of this capability may slow adoption of TLS 1.3.</t>
+    <t>While DHE and ECDHE are in nearly all ways an improvement over
+    the TLS RSA handshake, the use of these mechanisms a limitation in
+    certain enterprise settings. Specifically, the use of ephemeral
+    ciphersuites that provide Forward Secrecy is not compatible with
+    enterprise network monitoring tools such as the use of Intrusion
+    Detection Systems (IDS) and application monitoring systems to meet
+    regulatory auditing requirements that must passively monitor
+    intranet TLS connections made to endpoints under the enterprise's
+    control. This traffic includes TLS connections made from
+    enterprise network security devices (firewalls) and load balancers
+    at the edge of the enterprise network to internal enterprise TLS
+    servers. It does not include TLS connections traveling over the
+    external Internet.</t>
 
-   <t> This document describes an optional configuration for TLS
-   servers that allows for the use of a static Diffie-Hellman secret
-   for all TLS connections made to the server. Passive monitoring of
-   TLS connections can be enabled by installing a corresponding copy
-   of this key in each monitoring device.</t>
+    <t>Such monitoring is ubiquitous, indispensable and required by
+    law in some industries. This monitoring is required for effective,
+    safe and legal operation of enterprise networks. Loss of this
+    capability may slow adoption of TLS 1.3.</t>
 
-   <t>An advantage of this proposal is that it can be implemented
-   using software modifications to the TLS server only, without the
-   need to make changes to TLS client implementations.</t>
+    <t> This document describes an optional configuration for TLS
+    servers that allows for the use of a static Diffie-Hellman secret
+    for all TLS connections made to the server. Passive monitoring of
+    TLS connections can be enabled by installing a corresponding copy
+    of this key in each monitoring device.</t>
 
+    <t>An advantage of this proposal is that it can be implemented
+    using software modifications to the TLS server only, without the
+    need to make changes to TLS client implementations.</t>
+
+    <section title="Terminology">
+
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+      NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
+      "OPTIONAL" in this document are to be interpreted as described
+      in <xref target="RFC2119" />.</t>
+
+    </section>
+
+    <section title="ASN.1">
+
+      <t>The Cryptographic Message Syntax (CMS)
+      <xref target="RFC5652" /> and asymmetric key packages
+      <xref target="RFC5958" /> are generated using ASN.1
+      <xref target="X680" />, which uses the Basic Encoding
+      Rules (BER) and the Distinguished Encoding Rules (DER)
+      <xref target="X690" />.</t>
+ 
+    </section>
+    
   </section>
   
   <section title="Enterprise TLS Decryption Architecture">
     
-    <t>(Insert high-level ASCII-art picture here, emphasizing that the
-    traffic that uses static-DH is contained entirely in the
-    enterprise network, while traffic outside the enterprise network
-    uses ephemeral-DH.)</t>
+    <t>(Insert explanatory text for <xref target="TSK-1" /> here,
+    emphasizing that the traffic that uses static-DH is contained
+    entirely in the enterprise network, while traffic outside the
+    enterprise network uses ephemeral-DH.)</t>
 
-    <figure align="center" anchor="TSK-5"
+    <figure align="center" anchor="TSK-1"
             title="Enterprise TLS Decryption Architecture">
       <artwork align="center"><![CDATA[
       
@@ -147,8 +177,7 @@
 
   </section>
   
-  <section title="Enterprise Requirements for Passive
-                  (out-of-band) TLS Decryption">
+  <section title="Enterprise Requirements for Passive (out-of-band) TLS Decryption">
     <t>Enterprise networks based on this architecture have operational
     requirements for traffic monitoring and ex post facto analysis for
     purposes of:</t>
@@ -157,7 +186,7 @@
       <t>Application troubleshooting and performance analysis</t>
       <t>Fraud monitoring</t>
       <t>Security, including intrusion detection, malware
-      detection, confidential data exfiltration, layer 7 DDoS
+      detection, confidential data exfiltration and layer 7 DDoS
       protection</t>
       <t>Audit compliance</t>
       <t>Customer Experience Monitoring</t>
@@ -166,7 +195,7 @@
     <t>Specific requirements to meet the listed operational
     requirements include:</t>
 
-    <t><list style="letters">
+    <t><list style="symbols">
       <t>TLS decryption for network security monitoring tools
       must be done in real time with no gaps in decryption.</t>
            
@@ -175,11 +204,9 @@
       <t>The solution must scale to handle thousands of TLS
       sessions/sec.</t> 
       <t>Key material must be preserved a minimum of 30 days for
-      back-in-time analysis.  This means that there will be
-      billions of ephemeral keys to manage.  If we use the
+      back-in-time analysis.  If we use the
       average time to breach detection as our guide for packet
-      and key retention, the number of ephemeral keys to manage
-      escalates.</t> 
+      and key retention, the number of days increases.</t> 
       <t>Key material must be encrypted during network transit</t>
       <t>The solution must not negatively impact the enterprise
       infrastructure (servers, network, etc.)</t> 
@@ -198,8 +225,7 @@
 	   anchor="section-2">
 
     <t>In TLS 1.3, servers exchange keys using two primary modes,
-    Ephemeral Diffie-Hellman (DHE) and Elliptic Curve Ephemeral
-    Diffie-Hellman (ECDHE). In a simplified view of the full
+    DHE and ECDHE. In a simplified view of the full
     handshake, the following steps occur:
 
     <list style="numbers"><?rfc subcompact="yes"?>
@@ -227,22 +253,23 @@
     </t>
   </section>
 
-  <section title="Using static (EC) Diffie-Hellman on the server"
+  <section title="Using static ECDHE on the server"
 	   anchor="section-3">
 
     <t>The proposal embodied in this draft modifies the standard TLS
     handshake summarized above in the following ways.</t>
 
     <t>First, for each elliptic curve (and FF-DH parameter length)
-    supported by the server, the server is provisioned with a random
-    static (EC) Diffie- Hellman private key. This key is generated at
-    server installation, and is rotated at periodic intervals
-    appropriate for any long-term server key. These keys could also be
-    generated at a central key management server and distributed (in a
-    secure encrypted form) to many endpoint servers.</t>
-
-    <t>The static secret key is used to derive a fixed, static (EC)
-    Diffie- Hellman public key.</t>
+    supported by the server, the server is provisioned with a
+    static ECDHE private/public key pair. This key pair may be either:
+    <list style="symbols">
+      <t>generated at
+      server installation, and rotated at periodic intervals
+      appropriate for any long-term server key,</t>
+      <t>generated at a central key management server and distributed (in a
+      secure encrypted form) to many endpoint servers.</t>
+    </list>
+    </t>
 
     <t>All steps of the original handshake proceed as above, with the
     following modification to server behavior. Step (2) proceeds as
@@ -268,13 +295,13 @@
 
     <t>OneAsymmetricKey is defined in Section 2 of [RFC5958].  The
     fields are used as follows:
-    <list style="hanging" hangIndent="6">
+    <list style="symbols">
 
       <t>version MUST be set to v2, which has an integer value of 1.</t>
 
       <t>privateKeyAlgorithm MUST be set to the algorithm identifier
       of the Diffie-Hellman key pair.  For convenience, some popular
-      algorithm identifiers are listed in Table 1.</t>
+      algorithm identifiers are listed in <xref target="TSK-2" />.</t>
 
       <t>privateKey MUST be set to the Diffie-Hellman private key
       encoded as an OCTET STRING.</t>
@@ -290,7 +317,7 @@
       in an X.509 certificate [RFC5280] for this public key.</t>
     </list></t>
 
-    <figure align="center" anchor="TSK-4"
+    <figure align="center" anchor="TSK-2"
             title="Popular Diffie-Hellman Algorithm Identifiers">
       <artwork align="center"><![CDATA[
 +-------------------------------------------------------------------+
@@ -341,15 +368,17 @@
 
   <section title="TLS Static DH Key (TSK) Protocol">
 
-    <t>The two main roles in the TSK protocol are "key manager" and
-    "key consumer". Key consumers can be TLS servers or TLS
-    decrypters. The key manager generates, distributes, and tracks
-    static (EC)DH keys used by key consumers. TSK messaging is based
-    on HTTPS <xref target="RFC2818" />. Keys are transferred as
-    Asymmetric Key Packages <xref target="RFC5958" />, using the
-    profile in <xref target="keyrep" /> of this document.</t>
+    <t>The TLS Static DH Key (TSK) Protocol is used in cases where the
+    Diffie-Hellman keys are centrally managed.  The two main roles in
+    the TSK protocol are "key manager" and "key consumer". Key
+    consumers can be TLS servers or TLS decrypters. The key manager
+    generates, distributes, and tracks static (EC)DH keys used by key
+    consumers. TSK messaging is based on HTTPS <xref target="RFC2818"
+    />. Keys are transferred as Asymmetric Key Packages <xref
+    target="RFC5958" />, using the profile in <xref target="keyrep" />
+    of this document.</t>
 
-    <figure align="center" anchor="TSK-1"
+    <figure align="center" anchor="TSK-3"
             title="TSK protocol components">
       <artwork align="center"><![CDATA[
 
@@ -373,7 +402,7 @@
 
     <t>The key manager can push keys to key consumers: </t>
     
-    <figure align="center" anchor="TSK-2"
+    <figure align="center" anchor="TSK-4"
             title="TSK protocol push model">
       <artwork align="center"><![CDATA[
     TLS server               key manager             TLS decrypter
@@ -395,7 +424,7 @@
     <t>Alternatively, key consumers can request (or pull) keys from the
     key manager. </t>
     
-    <figure align="center" anchor="TSK-3"
+    <figure align="center" anchor="TSK-5"
             title="TSK protocol pull model">
       <artwork align="center"><![CDATA[
     TLS server               key manager             TLS decrypter
@@ -417,7 +446,7 @@
 
       <t>An HTTPS-based TSK push is composed of the appropriate HTTP
       headers, followed by the binary value of the BER (Basic Encoding
-      Rules) encoding of either a Simple or Full PKI Response.></t>
+      Rules) encoding of either a Simple or Full PKI Response.</t>
             
       <t>The Content-Type header MUST be application/cms <xref
       target="RFC7193" /> if the Asymmetric Key Package is encrypted
@@ -466,8 +495,9 @@
     
   </section>
 
-  <section title="Alternative Solutions">
-    <t><list style="numbers">
+  <section
+      title="Alternative Solutions for Enterprise Monitoring and Troubleshooting">
+    <t><list style="symbols">
       <t>Export of ephemeral keys</t> 
       <t>Export of decrypted traffic from TLS proxy devices at
       the edge of the enterprise network</t> 
@@ -484,42 +514,46 @@
   
   <section title="Weaknesses of Alternative Solutions">
     
-    <t><list style="numbers">
-      <t>Scale – In a large enterprise there will be billions of
-      ephemeral keys to export and manage.  There will also be
-      difficulty in getting these keys to real time tools that
-      need decrypted packets.  The complexity of the solution is
-      a problem that adds risk.</t> 
-      <t>Decrypted traffic at only the edge of the network is
-      not adequate for the enterprise requirements listed above
-      (troubleshooting, network security monitoring, etc…)</t> 
-      <t>Inline TLS proxies will not scale to the number of
-      decryption points needed within an enterprise.  Each
-      inline proxy adds cost, latency, and production risk.</t> 
-      <t>IP and/or TCP headers are not adequate for the
-      enterprise requirements listed above.  Troubleshooters
-      must be able to find transactions in a pcap trace,
-      identified by markers like userids, session ids, URLs, and
-      time stamps.  Threat Detection teams must be able to look
-      for Indicators of Compromise in the payload of packets,
-      etc.</t> 
-      <t>Logging is not adequate for the enterprise requirements
-      listed above.  Code developers cannot anticipate every
-      possible problem and put a log message in just the right
-      place.  There are billions of lines of code in a data
-      center, and it’s not scalable to try and improve
-      logging.</t> 
-      <t>Endpoints don’t have the robustness to do their own
-      workload and handle the burden of the various enterprise
-      requirements listed above.  These requirements would
-      include always-on full packet capture at the endpoint with
-      no packet drops.</t> 
-      <t>An important part of troubleshooting, network security
-      monitoring, etc. is analysis of the application-specific
-      payload of the packet.  It is not possible to anticipate
-      ahead of time, among thousands of unique applications,
-      which fields in the application payload will be
-      important.</t> 
+    <t><list style="hanging" hangIndent="6">
+      <t hangText="Export of ephemeral keys:">
+	Scale – In a large enterprise there will be billions of
+	ephemeral keys to export and manage.  There will also be
+	difficulty in transporting these keys to real time tools that
+	need decrypted packets.  The complexity of the solution is a
+	problem that adds risk.</t>
+      <t hangText="Export of decrypted traffic from TLS proxy devices:">
+	Decrypted traffic at only the edge of the network is not
+	adequate for the enterprise requirements listed above
+	(troubleshooting, network security monitoring, etc…)</t>
+      <t hangText="TLS proxies in the network:">
+	Inline TLS proxies will not scale to the number of decryption
+	points needed within an enterprise.  Each inline proxy adds
+	cost, latency, and production risk.</t>
+      <t hangText="Reliance on TCP/IP headers:">
+	IP and/or TCP headers are not adequate for the enterprise
+	requirements listed above.  Troubleshooters must be able to
+	find transactions in a pcap trace, identified by markers like
+	userids, session ids, URLs, and time stamps.  Threat Detection
+	teams must be able to look for Indicators of Compromise in the
+	payload of packets, etc.</t>
+      <t hangText="Reliance on Application/server logs:">
+	Logging is not adequate for the enterprise requirements
+	listed above.  Code developers cannot anticipate every
+	possible problem and put a log message in just the right
+	place.  There are billions of lines of code in a data
+	center, and it’s not scalable to try and improve
+        logging.</t> 
+      <t hangText="Troubleshooting and malware analysis at the endpoint:">
+	Endpoints don’t have the robustness to do their own workload
+	and handle the burden of the various enterprise requirements
+	listed above.  These requirements would include always-on full
+        packet capture at the endpoint with no packet drops.</t>
+      <t hangText="Adding TCP/UDP extensions:">
+	An important part of troubleshooting, network security
+	monitoring, etc. is analysis of the application-specific
+	payload of the packet.  It is not possible to anticipate ahead
+	of time, among thousands of unique applications, which fields
+	in the application payload will be important.</t>
     </list></t>
 
   </section>
@@ -528,8 +562,8 @@
     <t>We now consider the security implications of the change
     described above:</t>
 
-    <t><list style="letters">
-      <t>The shift from fully-ephemeral (EC) Diffie-Hellman to partially
+    <t><list style="numbers">
+      <t>The shift from fully-ephemeral ECHDE to partially
       static Diffie-Hellman affects the security properties offered by
       the TLS 1.3 handshake by eliminating the Forward Secrecy
       property provided by the server. If a server is compromised
@@ -585,13 +619,48 @@
 <back>
   <references title="Normative References">
 
+    <?rfc include="reference.RFC.2119" ?>
     <?rfc include="reference.RFC.2818" ?>
+    <?rfc include="reference.RFC.5652" ?>
     <?rfc include="reference.RFC.5958" ?>
     <?rfc include="reference.RFC.6032" ?>
     <?rfc include="reference.RFC.6234" ?>
     <?rfc include="reference.RFC.7193" ?>   
     <?rfc include="reference.I-D.ietf-tls-tls13" ?>
-    
+    <?rfc include="reference.CCITT.X680.2002 ?>
+    <?rfc include="reference.CCITT.X690.2002 ?>
+
+    <reference anchor="X680">
+      <front>
+	<title>Information technology -- Abstract Syntax Notation
+             One (ASN.1): Specification of basic notation</title>
+	<author>
+	  <organization>ITU-T</organization>
+	</author>
+	<date year="2015" />
+      </front>
+
+      <seriesInfo name="ITU-T" value="Recommendation X.680" />
+
+    </reference>
+
+
+    <reference anchor="X690">
+      <front>
+	<title>Information technology -- ASN.1 encoding rules:
+             Specification of Basic Encoding Rules (BER), Canonical
+             Encoding Rules (CER) and Distinguished Encoding Rules
+             (DER)</title>
+	<author>
+	  <organization>ITU-T</organization>
+	</author>
+	<date year="2015" />
+      </front>
+
+      <seriesInfo name="ITU-T" value="Recommendation X.690" />
+
+    </reference>
+
   </references>
 
 </back>
