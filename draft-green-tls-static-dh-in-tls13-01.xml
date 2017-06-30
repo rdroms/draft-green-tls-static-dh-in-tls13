@@ -24,7 +24,7 @@
   </author>
   
   <author fullname="Ralph Droms" initials="R." surname="Droms">
-    <organization>(Unaffiliated)</organization>
+    <organization>Interisle Consulting</organization>
     <address>
       <email>rdroms.ietf@gmail.com</email>
     </address>
@@ -67,15 +67,16 @@
  
   
   <date year="2017"/>
-  <abstract><t>
-   Unlike earlier versions of TLS, current drafts of TLS 1.3 have
-   instead adopted ephemeral-mode Diffie-Hellman and elliptic-curve
-   Diffie-Hellman as the primary cryptographic key exchange mechanism
-   used in TLS. This document describes an optional configuration for
-   TLS servers that allows for the use of a static Diffie-Hellman secret
-   for all TLS connections made to the server. Passive monitoring of TLS
-   connections can be enabled by installing a corresponding copy of this
-   key in each monitoring device.</t>
+  <abstract>
+
+    <t> Unlike earlier versions of TLS, current drafts of TLS 1.3 have
+    instead adopted ephemeral-mode Diffie-Hellman and elliptic-curve
+    Diffie-Hellman as the primary cryptographic key exchange mechanism
+    used in TLS. This document describes an optional configuration for
+    TLS servers that allows for the use of a static Diffie-Hellman
+    private key for all TLS connections made to the server. Passive
+    monitoring of TLS connections can be enabled by installing a
+    corresponding copy of this key in each monitoring device.</t>
 
   </abstract>
 </front>
@@ -95,8 +96,8 @@
     ciphersuites that provide Forward Secrecy is not compatible with
     enterprise network monitoring tools such as the use of Intrusion
     Detection Systems (IDS) and application monitoring systems to meet
-    regulatory auditing requirements that must passively monitor
-    intranet TLS connections made to endpoints under the enterprise's
+    regulatory auditing requirements to passively monitor intranet TLS
+    connections made between endpoints under the enterprise's
     control. This traffic includes TLS connections made from
     enterprise network security devices (firewalls) and load balancers
     at the edge of the enterprise network to internal enterprise TLS
@@ -109,10 +110,10 @@
     capability may slow adoption of TLS 1.3.</t>
 
     <t> This document describes an optional configuration for TLS
-    servers that allows for the use of a static Diffie-Hellman secret
-    for all TLS connections made to the server. Passive monitoring of
-    TLS connections can be enabled by installing a corresponding copy
-    of this key in each monitoring device.</t>
+    servers that allows for the use of a static Diffie-Hellman private
+    key for all TLS connections made to the server. Passive monitoring
+    of TLS connections can be enabled by installing a corresponding
+    copy of this key in each monitoring device.</t>
 
     <t>An advantage of this proposal is that it can be implemented
     using software modifications to the TLS server only, without the
@@ -165,10 +166,10 @@
                           *             .\|  Web   |/.             *
                          *             .  + Server +  .            *
                         *   --------  .   |        |  .            *
-                        *  /Security\.    +--------+  .            *
-                        * |Appliance |................            *
-                        *  \         /                           *
-                        *   ---------                           *
+                       *  /   TLS   \.    +--------+  .            *
+                       * | Decrypter |................            *
+                       *  \         /                            *
+                        *  ---------                            *
                          *                                     *
                           **** Enterprise Network Boundary ****
 ]]>
@@ -204,9 +205,9 @@
       <t>The solution must scale to handle thousands of TLS
       sessions/sec.</t> 
       <t>Key material must be preserved a minimum of 30 days for
-      back-in-time analysis.  If we use the
-      average time to breach detection as our guide for packet
-      and key retention, the number of days increases.</t> 
+      back-in-time analysis.  Using the average time to breach
+      detection as the guide for packet and key retention, the number
+      of days increases.</t>
       <t>Key material must be encrypted during network transit</t>
       <t>The solution must not negatively impact the enterprise
       infrastructure (servers, network, etc.)</t> 
@@ -221,7 +222,7 @@
   
 
 
-  <section title="Summary of the existing Diffie-Hellman handshake"
+  <section title="Summary of the Existing Diffie-Hellman Handshake"
 	   anchor="section-2">
 
     <t>In TLS 1.3, servers exchange keys using two primary modes,
@@ -237,16 +238,16 @@
     and transmits the public key within a "key_share" message,
     along with a random nonce (ServerHello.random).</t>
     
-    <t>The two parties now calculate a shared (EC) Diffie-Hellman
+    <t>The two parties now calculate a shared ECDHE
     secret by combining the other party's ephemeral public key
-    with their own ephemeral secret.</t>
+    with their own ephemeral private key.</t>
 
     <t>A series of traffic and handshake keys is derived by
     combining this shared secret with various inputs from the
     handshake, including the ClientHello.random and
     ServerHello.random.</t>
 
-    <t>Data encryption is performed using these keys.</t>
+    <t>Data encryption is performed using the shared secret.</t>
 
     <?rfc subcompact="no"?>
     </list>
@@ -257,24 +258,28 @@
 	   anchor="section-3">
 
     <t>The proposal embodied in this draft modifies the standard TLS
-    handshake summarized above in the following ways.</t>
+    handshake summarized above in the following ways:
+    <list style="empty">
 
-    <t>First, for each elliptic curve (and FF-DH parameter length)
-    supported by the server, the server is provisioned with a
-    static ECDHE private/public key pair. This key pair may be either:
-    <list style="symbols">
-      <t>generated at
-      server installation, and rotated at periodic intervals
-      appropriate for any long-term server key,</t>
-      <t>generated at a central key management server and distributed (in a
-      secure encrypted form) to many endpoint servers.</t>
+      <t>For each elliptic curve (and FF-DH parameter length)
+      supported by the server, the server is provisioned with a
+      static ECDHE private/public key pair. This key pair may be either:
+      <list style="symbols">
+	<t>generated at
+	server installation, and rotated at periodic intervals
+	appropriate for any long-term server key,</t>
+	<t>generated at a central key management server and distributed (in a
+	secure encrypted form) to the appropriate endpoint servers.</t>
+      </list>
+      </t>
+
+      <t>All steps of the original handshake proceed as above, with the
+      following modification to server behavior. Step (2) proceeds as
+      follows:</t>
+
     </list>
     </t>
-
-    <t>All steps of the original handshake proceed as above, with the
-    following modification to server behavior. Step (2) proceeds as
-    follows:</t>
-
+    
     <t><list style="hanging" hangIndent="4">
       <t hangText="2."> The server transmits the static public key within a "key_share"
       message, along with a random nonce (ServerHello.random).</t>
@@ -286,7 +291,7 @@
 
   <section title="Key Representation" anchor="keyrep">
 
-    <t>The asymmetric key package [RFC5958] MUST be used to transfer
+    <t>The Asymmetric Key Package [RFC5958] MUST be used to transfer
     the centrally managed Diffie-Hellman key pair.  The key package
     contains at least one Diffie-Hellman key pair.  Each
     Diffie-Hellman key pair is associated with a set of attributes,
@@ -372,7 +377,7 @@
     Diffie-Hellman keys are centrally managed.  The two main roles in
     the TSK protocol are "key manager" and "key consumer". Key
     consumers can be TLS servers or TLS decrypters. The key manager
-    generates, distributes, and tracks static (EC)DH keys used by key
+    generates, distributes, and tracks static ECDHE keys used by key
     consumers. TSK messaging is based on HTTPS <xref target="RFC2818"
     />. Keys are transferred as Asymmetric Key Packages <xref
     target="RFC5958" />, using the profile in <xref target="keyrep" />
@@ -434,9 +439,9 @@
         |                         |  / key pair            |
         |                         |<-                      |
         |                         |                        |
-        |                         |----------------------->|
+        |                         |<-----------------------|
         |                         |    Request key pair    |
-        |<------------------------|                        |
+        |------------------------>|                        |
         |     Request key pair    |                        |
 ]]>
       </artwork>
@@ -446,13 +451,14 @@
 
       <t>An HTTPS-based TSK push is composed of the appropriate HTTP
       headers, followed by the binary value of the BER (Basic Encoding
-      Rules) encoding of either a Simple or Full PKI Response.</t>
+      Rules) encoding of the Asymmetric Key Package.</t>
             
-      <t>The Content-Type header MUST be application/cms <xref
-      target="RFC7193" /> if the Asymmetric Key Package is encrypted
-      with CMS <xref target="RFC6032" />. The Content-Type header MUST
-      be application/pkcs8 if the AsymmetricKeyPackage is transferred
-      in plain text (within the encrypted HTTPS stream).</t>
+      <t>The Content-Type header MUST be application/cms
+      <xref target="RFC7193" /> if the Asymmetric Key Package is
+      encrypted with CMS <xref target="RFC6032" />. The Content-Type
+      header MUST be application/pkcs8 if the Asymmetric Key Package
+      is transferred in plain text (within the encrypted HTTPS
+      stream).</t>
     </section>
           
     <section title="Key Request">
@@ -482,13 +488,12 @@
 
       <t>The response to the TSK push is composed of the appropriate
       HTTP headers, followed by the binary value of the BER (Basic
-      Encoding Rules) encoding of either a Simple or Full PKI
-      Response.</t>
+      Encoding Rules) encoding of the Asymmetric Key Package.</t>
             
       <t>The Content-Type header MUST be application/cms [RFC 7193] if
       the Asymmetric Key Package is encrypted with CMS [RFC 6032]. The
       Content-Type header MUST be application/pkcs8 if the
-      AsymmetricKeyPackage is transferred in plain text (within the
+      Asymmetric Key Package is transferred in plain text (within the
       encrypted HTTPS stream).</t>
 
     </section>
@@ -564,7 +569,7 @@
 
     <t><list style="numbers">
       <t>The shift from fully-ephemeral ECHDE to partially
-      static Diffie-Hellman affects the security properties offered by
+      static ECDHE affects the security properties offered by
       the TLS 1.3 handshake by eliminating the Forward Secrecy
       property provided by the server. If a server is compromised
       and the private key is stolen, then an attacker who observes any
@@ -599,7 +604,7 @@
     represents a deliberate weakening of some security
     properties. Implementers who choose to include this capability
     should carefully consider the risks to their infrastructure of
-    using a handshake without Forward Secrecy. Static secret keys
+    using a handshake without Forward Secrecy. Static ECDHE key pairs
     should be rotated regularly.</t>
 
   </section>

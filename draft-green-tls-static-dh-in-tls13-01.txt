@@ -5,7 +5,7 @@
 Network Working Group                                           M. Green
 Internet-Draft                              Cryptography Engineering LLC
 Intended status: Standards Track                                R. Droms
-Expires: January 1, 2018                                  (Unaffiliated)
+Expires: January 1, 2018                            Interisle Consulting
                                                               R. Housley
                                                      Vigil Security, LLC
                                                                P. Turner
@@ -24,10 +24,10 @@ Abstract
    instead adopted ephemeral-mode Diffie-Hellman and elliptic-curve
    Diffie-Hellman as the primary cryptographic key exchange mechanism
    used in TLS.  This document describes an optional configuration for
-   TLS servers that allows for the use of a static Diffie-Hellman secret
-   for all TLS connections made to the server.  Passive monitoring of
-   TLS connections can be enabled by installing a corresponding copy of
-   this key in each monitoring device.
+   TLS servers that allows for the use of a static Diffie-Hellman
+   private key for all TLS connections made to the server.  Passive
+   monitoring of TLS connections can be enabled by installing a
+   corresponding copy of this key in each monitoring device.
 
 Status of This Memo
 
@@ -81,7 +81,7 @@ Table of Contents
    2.  Enterprise TLS Decryption Architecture  . . . . . . . . . . .   3
    3.  Enterprise Requirements for Passive (out-of-band) TLS
        Decryption  . . . . . . . . . . . . . . . . . . . . . . . . .   4
-   4.  Summary of the existing Diffie-Hellman handshake  . . . . . .   5
+   4.  Summary of the Existing Diffie-Hellman Handshake  . . . . . .   5
    5.  Using static ECDHE on the server  . . . . . . . . . . . . . .   5
    6.  Key Representation  . . . . . . . . . . . . . . . . . . . . .   6
    7.  TLS Static DH Key (TSK) Protocol  . . . . . . . . . . . . . .   7
@@ -118,8 +118,8 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    ciphersuites that provide Forward Secrecy is not compatible with
    enterprise network monitoring tools such as the use of Intrusion
    Detection Systems (IDS) and application monitoring systems to meet
-   regulatory auditing requirements that must passively monitor intranet
-   TLS connections made to endpoints under the enterprise's control.
+   regulatory auditing requirements to passively monitor intranet TLS
+   connections made between endpoints under the enterprise's control.
    This traffic includes TLS connections made from enterprise network
    security devices (firewalls) and load balancers at the edge of the
    enterprise network to internal enterprise TLS servers.  It does not
@@ -131,8 +131,8 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    slow adoption of TLS 1.3.
 
    This document describes an optional configuration for TLS servers
-   that allows for the use of a static Diffie-Hellman secret for all TLS
-   connections made to the server.  Passive monitoring of TLS
+   that allows for the use of a static Diffie-Hellman private key for
+   all TLS connections made to the server.  Passive monitoring of TLS
    connections can be enabled by installing a corresponding copy of this
    key in each monitoring device.
 
@@ -184,10 +184,10 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
                              *             .\|  Web   |/.             *
                             *             .  + Server +  .            *
                            *   --------  .   |        |  .            *
-                           *  /Security\.    +--------+  .            *
-                           * |Appliance |................            *
-                           *  \         /                           *
-                           *   ---------                           *
+                          *  /   TLS   \.    +--------+  .            *
+                          * | Decrypter |................            *
+                          *  \         /                            *
+                           *  ---------                            *
                             *                                     *
                              **** Enterprise Network Boundary ****
 
@@ -232,9 +232,8 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    o  The solution must scale to handle thousands of TLS sessions/sec.
 
    o  Key material must be preserved a minimum of 30 days for back-in-
-      time analysis.  If we use the average time to breach detection as
-      our guide for packet and key retention, the number of days
-      increases.
+      time analysis.  Using the average time to breach detection as the
+      guide for packet and key retention, the number of days increases.
 
    o  Key material must be encrypted during network transit
 
@@ -247,7 +246,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    o  The solution must be able to decrypt in a physical data center, in
       a virtual environment, and in a cloud.
 
-4.  Summary of the existing Diffie-Hellman handshake
+4.  Summary of the Existing Diffie-Hellman Handshake
 
    In TLS 1.3, servers exchange keys using two primary modes, DHE and
    ECDHE.  In a simplified view of the full handshake, the following
@@ -259,21 +258,22 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    2.  The server generates an ephemeral public and private key, and
        transmits the public key within a "key_share" message, along with
        a random nonce (ServerHello.random).
-   3.  The two parties now calculate a shared (EC) Diffie-Hellman secret
-       by combining the other party's ephemeral public key with their
-       own ephemeral secret.
+   3.  The two parties now calculate a shared ECDHE secret by combining
+       the other party's ephemeral public key with their own ephemeral
+       private key.
    4.  A series of traffic and handshake keys is derived by combining
        this shared secret with various inputs from the handshake,
        including the ClientHello.random and ServerHello.random.
-   5.  Data encryption is performed using these keys.
+   5.  Data encryption is performed using the shared secret.
 
 5.  Using static ECDHE on the server
 
    The proposal embodied in this draft modifies the standard TLS
-   handshake summarized above in the following ways.
+   handshake summarized above in the following ways:
 
-
-
+      For each elliptic curve (and FF-DH parameter length) supported by
+      the server, the server is provisioned with a static ECDHE private/
+      public key pair.  This key pair may be either:
 
 
 
@@ -282,26 +282,23 @@ Green, et al.            Expires January 1, 2018                [Page 5]
 Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
 
 
-   First, for each elliptic curve (and FF-DH parameter length) supported
-   by the server, the server is provisioned with a static ECDHE private/
-   public key pair.  This key pair may be either:
+      *  generated at server installation, and rotated at periodic
+         intervals appropriate for any long-term server key,
 
-   o  generated at server installation, and rotated at periodic
-      intervals appropriate for any long-term server key,
+      *  generated at a central key management server and distributed
+         (in a secure encrypted form) to the appropriate endpoint
+         servers.
 
-   o  generated at a central key management server and distributed (in a
-      secure encrypted form) to many endpoint servers.
-
-   All steps of the original handshake proceed as above, with the
-   following modification to server behavior.  Step (2) proceeds as
-   follows:
+      All steps of the original handshake proceed as above, with the
+      following modification to server behavior.  Step (2) proceeds as
+      follows:
 
    2.  The server transmits the static public key within a "key_share"
        message, along with a random nonce (ServerHello.random).
 
 6.  Key Representation
 
-   The asymmetric key package [RFC5958] MUST be used to transfer the
+   The Asymmetric Key Package [RFC5958] MUST be used to transfer the
    centrally managed Diffie-Hellman key pair.  The key package contains
    at least one Diffie-Hellman key pair.  Each Diffie-Hellman key pair
    is associated with a set of attributes, including the key validity
@@ -328,6 +325,9 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
       MUST be set to the Diffie-Hellman public key, encoded as a BIT
       STRING.  This is the same BIT STRING that would be included in an
       X.509 certificate [RFC5280] for this public key.
+
+
+
 
 
 
@@ -382,8 +382,8 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    Diffie-Hellman keys are centrally managed.  The two main roles in the
    TSK protocol are "key manager" and "key consumer".  Key consumers can
    be TLS servers or TLS decrypters.  The key manager generates,
-   distributes, and tracks static (EC)DH keys used by key consumers.
-   TSK messaging is based on HTTPS [RFC2818].  Keys are transferred as
+   distributes, and tracks static ECDHE keys used by key consumers.  TSK
+   messaging is based on HTTPS [RFC2818].  Keys are transferred as
    Asymmetric Key Packages [RFC5958], using the profile in Section 6 of
    this document.
 
@@ -457,9 +457,9 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
             |                         |  / key pair            |
             |                         |<-                      |
             |                         |                        |
-            |                         |----------------------->|
+            |                         |<-----------------------|
             |                         |    Request key pair    |
-            |<------------------------|                        |
+            |------------------------>|                        |
             |     Request key pair    |                        |
 
 
@@ -469,12 +469,12 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
 
    An HTTPS-based TSK push is composed of the appropriate HTTP headers,
    followed by the binary value of the BER (Basic Encoding Rules)
-   encoding of either a Simple or Full PKI Response.
+   encoding of the Asymmetric Key Package.
 
    The Content-Type header MUST be application/cms [RFC7193] if the
    Asymmetric Key Package is encrypted with CMS [RFC6032].  The Content-
-   Type header MUST be application/pkcs8 if the AsymmetricKeyPackage is
-   transferred in plain text (within the encrypted HTTPS stream).
+   Type header MUST be application/pkcs8 if the Asymmetric Key Package
+   is transferred in plain text (within the encrypted HTTPS stream).
 
 7.2.  Key Request
 
@@ -495,7 +495,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
 
    The response to the TSK push is composed of the appropriate HTTP
    headers, followed by the binary value of the BER (Basic Encoding
-   Rules) encoding of either a Simple or Full PKI Response.
+   Rules) encoding of the Asymmetric Key Package.
 
 
 
@@ -508,9 +508,9 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
 
    The Content-Type header MUST be application/cms [RFC 7193] if the
    Asymmetric Key Package is encrypted with CMS [RFC 6032].  The
-   Content-Type header MUST be application/pkcs8 if the
-   AsymmetricKeyPackage is transferred in plain text (within the
-   encrypted HTTPS stream).
+   Content-Type header MUST be application/pkcs8 if the Asymmetric Key
+   Package is transferred in plain text (within the encrypted HTTPS
+   stream).
 
 8.  Alternative Solutions for Enterprise Monitoring and Troubleshooting
 
@@ -586,10 +586,10 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    We now consider the security implications of the change described
    above:
 
-   1.  The shift from fully-ephemeral ECHDE to partially static Diffie-
-       Hellman affects the security properties offered by the TLS 1.3
-       handshake by eliminating the Forward Secrecy property provided by
-       the server.  If a server is compromised and the private key is
+   1.  The shift from fully-ephemeral ECHDE to partially static ECDHE
+       affects the security properties offered by the TLS 1.3 handshake
+       by eliminating the Forward Secrecy property provided by the
+       server.  If a server is compromised and the private key is
        stolen, then an attacker who observes any TLS handshake (even one
        that occurred prior to the compromise) will be able to recover
        traffic encryption keys and will be able to decrypt traffic.
@@ -622,7 +622,7 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       June 2017
    weakening of some security properties.  Implementers who choose to
    include this capability should carefully consider the risks to their
    infrastructure of using a handshake without Forward Secrecy.  Static
-   secret keys should be rotated regularly.
+   ECDHE key pairs should be rotated regularly.
 
 11.  IANA Considerations
 
@@ -699,7 +699,7 @@ Authors' Addresses
 
 
    Ralph Droms
-   (Unaffiliated)
+   Interisle Consulting
 
    Email: rdroms.ietf@gmail.com
 
