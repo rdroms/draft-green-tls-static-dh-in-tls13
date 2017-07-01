@@ -141,12 +141,20 @@
     
   </section>
   
-  <section title="Enterprise TLS Decryption Architecture">
+  <section title="Enterprise Out-of-band TLS Decryption Architecture">
     
-    <t>(Insert explanatory text for <xref target="TSK-1" /> here,
-    emphasizing that the traffic that uses static-DH is contained
-    entirely in the enterprise network, while traffic outside the
-    enterprise network uses ephemeral-DH.)</t>
+    <t>This document describes the use of a static Diffie-Hellman
+    private key by servers for use in TLS 1.3 sessions internal to an
+    enterprise network.  In <xref target="TSK-1" />, the Web Servers
+    use static (EC)DH for connections from the Load Balancer, and the
+    Back-End Services use static (EC)DH for connections from the Web
+    Servers.  The Load Balancer uses ephemeral (EC)DH for connections
+    from external Browsers over the Internet, to provide Forward
+    Secrecy on those connections that are exposed to third-party
+    monitoring.  Internally, the static (EC)DH keys are provided to
+    any TLS Decrypter devices, such as intrusion detection systems,
+    application monitoring systems or network packet capture
+    devices.</t>
 
     <figure align="center" anchor="TSK-1"
             title="Enterprise TLS Decryption Architecture">
@@ -313,13 +321,15 @@
 
       <t>attributes MUST be included even though the field is
       optional.  The set of attributes MUST include the key validity
-      period attribute defined in Section 15 of [RFC7906].  Other
-      attributes MAY be included as well.</t>
+      period attribute defined in Section 15 of <xref
+      target="RFC7906" />.  Other attributes MAY be included as
+      well.</t>
 
       <t>publicKey MUST be included even though the field is optional.
       It MUST be set to the Diffie-Hellman public key, encoded as a
       BIT STRING.  This is the same BIT STRING that would be included
-      in an X.509 certificate [RFC5280] for this public key.</t>
+      in an X.509 certificate <xref target="RFC5280" /> for this public
+      key.</t>
     </list></t>
 
     <figure align="center" anchor="TSK-2"
@@ -345,9 +355,9 @@
       </artwork>
     </figure>
 
-    <t>The CMS protecting content types [RFC5652][RFC5083] can be used
-    to provide authentication and confidentiality protection for the
-    Asymmetric Key Package:
+    <t>The CMS protecting content types <xref target="RFC5652" /><xref
+    target="RFC5083" /> can be used to provide authentication and
+    confidentiality protection for the Asymmetric Key Package:
     <list style="symbols">
 
       <t>SignedData can be used to apply a digital signature to
@@ -490,11 +500,12 @@
       HTTP headers, followed by the binary value of the BER (Basic
       Encoding Rules) encoding of the Asymmetric Key Package.</t>
             
-      <t>The Content-Type header MUST be application/cms [RFC 7193] if
-      the Asymmetric Key Package is encrypted with CMS [RFC 6032]. The
-      Content-Type header MUST be application/pkcs8 if the
-      Asymmetric Key Package is transferred in plain text (within the
-      encrypted HTTPS stream).</t>
+      <t>The Content-Type header MUST be application/cms
+      <xref target="RFC7193" /> if the Asymmetric Key Package is
+      encrypted with CMS <xref target="RFC6032" />. The Content-Type
+      header MUST be application/pkcs8 if the Asymmetric Key Package
+      is transferred in plain text (within the encrypted HTTPS
+      stream).</t>
 
     </section>
     
@@ -626,11 +637,16 @@
 
     <?rfc include="reference.RFC.2119" ?>
     <?rfc include="reference.RFC.2818" ?>
+    <?rfc include="reference.RFC.3279" ?>
+    <?rfc include="reference.RFC.5083" ?>
+    <?rfc include="reference.RFC.5280" ?>
+    <?rfc include="reference.RFC.5915" ?>
     <?rfc include="reference.RFC.5652" ?>
     <?rfc include="reference.RFC.5958" ?>
     <?rfc include="reference.RFC.6032" ?>
     <?rfc include="reference.RFC.6234" ?>
-    <?rfc include="reference.RFC.7193" ?>   
+    <?rfc include="reference.RFC.7193" ?>
+    <?rfc include="reference.RFC.7906" ?>
     <?rfc include="reference.I-D.ietf-tls-tls13" ?>
     <?rfc include="reference.CCITT.X680.2002 ?>
     <?rfc include="reference.CCITT.X690.2002 ?>
