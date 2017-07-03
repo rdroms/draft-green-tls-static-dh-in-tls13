@@ -5,14 +5,14 @@
 Network Working Group                                           M. Green
 Internet-Draft                              Cryptography Engineering LLC
 Intended status: Standards Track                                R. Droms
-Expires: January 2, 2018                            Interisle Consulting
+Expires: January 4, 2018                            Interisle Consulting
                                                               R. Housley
                                                      Vigil Security, LLC
                                                                P. Turner
                                                                   Venafi
                                                                S. Fenter
                                                                   USBank
-                                                            July 1, 2017
+                                                            July 3, 2017
 
 
           Data Center use of Static Diffie-Hellman in TLS 1.3
@@ -44,7 +44,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on January 2, 2018.
+   This Internet-Draft will expire on January 4, 2018.
 
 
 
@@ -53,7 +53,7 @@ Status of This Memo
 
 
 
-Green, et al.            Expires January 2, 2018                [Page 1]
+Green, et al.            Expires January 4, 2018                [Page 1]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
@@ -84,7 +84,7 @@ Table of Contents
    4.  Summary of the Existing Diffie-Hellman Handshake  . . . . . .   5
    5.  Using static ECDHE on the server  . . . . . . . . . . . . . .   6
    6.  Key Representation  . . . . . . . . . . . . . . . . . . . . .   6
-   7.  TLS Static DH Key (TSK) Protocol  . . . . . . . . . . . . . .   7
+   7.  TLS Static DH Key (TSK) Protocol  . . . . . . . . . . . . . .   8
      7.1.  Key Push  . . . . . . . . . . . . . . . . . . . . . . . .   9
      7.2.  Key Request . . . . . . . . . . . . . . . . . . . . . . .   9
    8.  Alternative Solutions for Enterprise Monitoring and
@@ -94,7 +94,7 @@ Table of Contents
    11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  12
    12. Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  12
    13. Normative References  . . . . . . . . . . . . . . . . . . . .  12
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  13
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  14
 
 1.  Introduction
 
@@ -104,37 +104,37 @@ Table of Contents
    elliptic-curve Diffie-Hellman (ECDHE) as the primary cryptographic
    key exchange mechanism used in TLS.
 
-   While DHE and ECDHE are in nearly all ways an improvement over the
-   TLS RSA handshake, the use of these mechanisms a limitation in
+   While ephemeral (EC) Diffie-Hellman is in nearly all ways an
+   improvement over the TLS RSA handshake, the use of these mechanisms a
 
 
 
-Green, et al.            Expires January 2, 2018                [Page 2]
+Green, et al.            Expires January 4, 2018                [Page 2]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
 
-   certain enterprise settings.  Specifically, the use of ephemeral
-   ciphersuites that provide Forward Secrecy is not compatible with
-   enterprise network monitoring tools such as the use of Intrusion
-   Detection Systems (IDS) and application monitoring systems to meet
-   regulatory auditing requirements to passively monitor intranet TLS
-   connections made between endpoints under the enterprise's control.
-   This traffic includes TLS connections made from enterprise network
-   security devices (firewalls) and load balancers at the edge of the
-   enterprise network to internal enterprise TLS servers.  It does not
-   include TLS connections traveling over the external Internet.
+   limitation in certain enterprise settings.  Specifically, the use of
+   ephemeral ciphersuites that provide Forward Secrecy is not compatible
+   with enterprise network monitoring tools such as the use of Intrusion
+   Detection Systems (IDS) and application monitoring systems to
+   passively monitor intranet TLS connections made between endpoints
+   under the enterprise's control.  This traffic includes TLS
+   connections made from enterprise network security devices (firewalls)
+   and load balancers at the edge of the enterprise network to internal
+   enterprise TLS servers.  It does not include TLS connections
+   traveling over the external Internet.
 
-   Such monitoring is ubiquitous, indispensable and required by law in
-   some industries.  This monitoring is required for effective, safe and
-   legal operation of enterprise networks.  Loss of this capability may
-   slow adoption of TLS 1.3.
+   Such monitoring is ubiquitous and indispensable in some industries.
+   This monitoring is required for effective and safe operation of
+   enterprise networks.  Loss of this capability may slow adoption of
+   TLS 1.3.
 
    This document describes an optional configuration for TLS servers
-   that allows for the use of a static Diffie-Hellman private key for
-   all TLS connections made to the server.  Passive monitoring of TLS
-   connections can be enabled by installing a corresponding copy of this
-   key in each monitoring device.
+   that allows for the use of a static (EC) Diffie-Hellman private key
+   for all TLS connections made to the server.  Passive monitoring of
+   TLS connections can be enabled by installing a corresponding copy of
+   this key in each authorized monitoring device.
 
    An advantage of this proposal is that it can be implemented using
    software modifications to the TLS server only, without the need to
@@ -155,25 +155,27 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
 2.  Enterprise Out-of-band TLS Decryption Architecture
 
-   This document describes the use of a static Diffie-Hellman private
-   key by servers for use in TLS 1.3 sessions internal to an enterprise
-   network.  In Figure 1, the Web Servers use static (EC)DH for
+   This document describes the use of a static elliptic-curve Diffie-
+   Hellman (ECDHE) private key by servers for use in TLS 1.3 sessions
+   internal to an enterprise network.  In Figure 1, the Web Servers use
+   a static ECDHE key pair with the standard TLS 1.3 handshake for
    connections from the Load Balancer, and the Back-End Services use
-   static (EC)DH for connections from the Web Servers.  The Load
-   Balancer uses ephemeral (EC)DH for connections from external Browsers
-   over the Internet, to provide Forward Secrecy on those connections
+   static ECDHE for connections from the Web Servers.  The Load Balancer
+   uses ephemeral (EC)DHE key pairs with the standard TLS 1.3 handshake
 
 
 
-Green, et al.            Expires January 2, 2018                [Page 3]
+Green, et al.            Expires January 4, 2018                [Page 3]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
 
-   that are exposed to third-party monitoring.  Internally, the static
-   (EC)DH keys are provided to any TLS Decrypter devices, such as
-   intrusion detection systems, application monitoring systems or
-   network packet capture devices.
+   for connections from external Browsers over the Internet, to provide
+   Forward Secrecy on those connections that are exposed to third-party
+   monitoring.  Internally, the static ECDHE keys are provided to
+   authorized TLS Decrypter devices, such as intrusion detection
+   systems, application monitoring systems or network packet capture
+   devices.
 
 
                                   ********************************
@@ -197,6 +199,11 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
                             *                                     *
                              **** Enterprise Network Boundary ****
 
+                                    |
+   <-----Ephemeral Key (EC)DHE----->|<--------Static Key ECDHE-------->
+                                    |
+
+
 
              Figure 1: Enterprise TLS Decryption Architecture
 
@@ -210,21 +217,21 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
    o  Fraud monitoring
 
+
+
+
+
+Green, et al.            Expires January 4, 2018                [Page 4]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
    o  Security, including intrusion detection, malware detection,
       confidential data exfiltration and layer 7 DDoS protection
 
    o  Audit compliance
 
    o  Customer Experience Monitoring
-
-
-
-
-
-Green, et al.            Expires January 2, 2018                [Page 4]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
 
    Specific requirements to meet the listed operational requirements
    include:
@@ -264,23 +271,21 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
    2.  The server generates an ephemeral public and private key, and
        transmits the public key within a "key_share" message, along with
        a random nonce (ServerHello.random).
-   3.  The two parties now calculate a shared ECDHE secret by combining
-       the other party's ephemeral public key with their own ephemeral
-       private key.
+   3.  The two parties now calculate a shared (EC)DHE secret by
+       combining the other party's ephemeral public key with their own
+       ephemeral private key.
+
+
+
+Green, et al.            Expires January 4, 2018                [Page 5]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
    4.  A series of traffic and handshake keys is derived by combining
        this shared secret with various inputs from the handshake,
        including the ClientHello.random and ServerHello.random.
    5.  Data encryption is performed using the shared secret.
-
-
-
-
-
-
-Green, et al.            Expires January 2, 2018                [Page 5]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
 
 5.  Using static ECDHE on the server
 
@@ -325,18 +330,18 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
    o  privateKey MUST be set to the Diffie-Hellman private key encoded
       as an OCTET STRING.
 
+
+
+
+Green, et al.            Expires January 4, 2018                [Page 6]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
    o  attributes MUST be included even though the field is optional.
       The set of attributes MUST include the key validity period
       attribute defined in Section 15 of [RFC7906].  Other attributes
       MAY be included as well.
-
-
-
-
-Green, et al.            Expires January 2, 2018                [Page 6]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
 
    o  publicKey MUST be included even though the field is optional.  It
       MUST be set to the Diffie-Hellman public key, encoded as a BIT
@@ -381,19 +386,19 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
       Package where the sender and the receiver establish a symmetric
       authenticated encryption key using Diffie-Hellman key agreement.
 
+
+
+
+Green, et al.            Expires January 4, 2018                [Page 7]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
 7.  TLS Static DH Key (TSK) Protocol
 
    The TLS Static DH Key (TSK) Protocol is used in cases where the
    Diffie-Hellman keys are centrally managed.  The two main roles in the
    TSK protocol are "key manager" and "key consumer".  Key consumers can
-
-
-
-Green, et al.            Expires January 2, 2018                [Page 7]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
-
    be TLS servers or TLS decrypters.  The key manager generates,
    distributes, and tracks static ECDHE keys used by key consumers.  TSK
    messaging is based on HTTPS [RFC2818].  Keys are transferred as
@@ -436,19 +441,17 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
                      Figure 4: TSK protocol push model
 
-   Alternatively, key consumers can request (or pull) keys from the key
-   manager.
 
 
 
 
-
-
-
-Green, et al.            Expires January 2, 2018                [Page 8]
+Green, et al.            Expires January 4, 2018                [Page 8]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
+
+   Alternatively, key consumers can request (or pull) keys from the key
+   manager.
 
         TLS server               key manager             TLS decrypter
             |                         |                        |
@@ -493,18 +496,19 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
       GET /tsk/key/PublicKeyFingerprint
       Accept: application/cms
 
-   The response to the TSK push is composed of the appropriate HTTP
-   headers, followed by the binary value of the BER (Basic Encoding
-   Rules) encoding of the Asymmetric Key Package.
 
 
 
 
 
-Green, et al.            Expires January 2, 2018                [Page 9]
+Green, et al.            Expires January 4, 2018                [Page 9]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
+
+   The response to the TSK push is composed of the appropriate HTTP
+   headers, followed by the binary value of the BER (Basic Encoding
+   Rules) encoding of the Asymmetric Key Package.
 
    The Content-Type header MUST be application/cms [RFC7193] if the
    Asymmetric Key Package is encrypted with CMS [RFC6032].  The Content-
@@ -550,17 +554,16 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
          for the enterprise requirements listed above.  Troubleshooters
          must be able to find transactions in a pcap trace, identified
          by markers like userids, session ids, URLs, and time stamps.
-         Threat Detection teams must be able to look for Indicators of
-         Compromise in the payload of packets, etc.
 
 
 
-
-
-Green, et al.            Expires January 2, 2018               [Page 10]
+Green, et al.            Expires January 4, 2018               [Page 10]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
+
+         Threat Detection teams must be able to look for Indicators of
+         Compromise in the payload of packets, etc.
 
    Reliance on Application/server logs:  Logging is not adequate for the
          enterprise requirements listed above.  Code developers cannot
@@ -607,16 +610,17 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
    4.  A flaw in the generation of finite-field Diffie-Hellman
        parameters or the use of an insecure implementation could leak
-       some bits of the static secret key over time.  This risk is not
-       present in ephemeral DH implementations.  Implementers should use
-       care to avoid such pitfalls.
 
 
 
-Green, et al.            Expires January 2, 2018               [Page 11]
+Green, et al.            Expires January 4, 2018               [Page 11]
 
 Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
+
+       some bits of the static secret key over time.  This risk is not
+       present in ephemeral DH implementations.  Implementers should use
+       care to avoid such pitfalls.
 
    Thus the modification described in Section 10 represents a deliberate
    weakening of some security properties.  Implementers who choose to
@@ -659,20 +663,27 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
               DOI 10.17487/RFC5083, November 2007,
               <http://www.rfc-editor.org/info/rfc5083>.
 
+
+
+
+
+
+
+Green, et al.            Expires January 4, 2018               [Page 12]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
    [RFC5280]  Cooper, D., Santesson, S., Farrell, S., Boeyen, S.,
               Housley, R., and W. Polk, "Internet X.509 Public Key
               Infrastructure Certificate and Certificate Revocation List
               (CRL) Profile", RFC 5280, DOI 10.17487/RFC5280, May 2008,
               <http://www.rfc-editor.org/info/rfc5280>.
 
-
-
-
-
-Green, et al.            Expires January 2, 2018               [Page 12]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
+   [RFC5480]  Turner, S., Brown, D., Yiu, K., Housley, R., and T. Polk,
+              "Elliptic Curve Cryptography Subject Public Key
+              Information", RFC 5480, DOI 10.17487/RFC5480, March 2009,
+              <http://www.rfc-editor.org/info/rfc5480>.
 
    [RFC5652]  Housley, R., "Cryptographic Message Syntax (CMS)", STD 70,
               RFC 5652, DOI 10.17487/RFC5652, September 2009,
@@ -709,26 +720,22 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
               One (ASN.1): Specification of basic notation",
               ITU-T Recommendation X.680, 2015.
 
+
+
+
+
+
+Green, et al.            Expires January 4, 2018               [Page 13]
+
+Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
+
+
    [X690]     ITU-T, "Information technology -- ASN.1 encoding rules:
               Specification of Basic Encoding Rules (BER), Canonical
               Encoding Rules (CER) and Distinguished Encoding Rules
               (DER)", ITU-T Recommendation X.690, 2015.
 
 Authors' Addresses
-
-
-
-
-
-
-
-
-
-
-Green, et al.            Expires January 2, 2018               [Page 13]
-
-Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
-
 
    Matthew Green
    Cryptography Engineering LLC
@@ -774,11 +781,4 @@ Internet-Draft  Data Center use of Static Diffie-Hellman       July 2017
 
 
 
-
-
-
-
-
-
-
-Green, et al.            Expires January 2, 2018               [Page 14]
+Green, et al.            Expires January 4, 2018               [Page 14]
