@@ -59,9 +59,9 @@
   </author>
 
   <author fullname ="Steve Fenter" initials="S." surname="Fenter">
-    <organization>USBank</organization>
+    <organization></organization>
     <address>
-      <email>steven.fenter@usbank.com</email>
+      <email>steven.fenter58@gmail.com</email>
     </address>
   </author>
  
@@ -92,33 +92,36 @@
 
     <t>While ephemeral (EC) Diffie-Hellman is in nearly all ways an
     improvement over the TLS RSA handshake, the use of these
-    mechanisms a limitation in certain enterprise
-    settings. Specifically, the use of ephemeral ciphersuites that
-    provide Forward Secrecy is not compatible with enterprise network
-    monitoring tools such as the use of Intrusion Detection Systems
-    (IDS) and application monitoring systems to passively monitor
-    intranet TLS connections made between endpoints under the
-    enterprise's control. This traffic includes TLS connections made
-    from enterprise network security devices (firewalls) and load
-    balancers at the edge of the enterprise network to internal
-    enterprise TLS servers. It does not include TLS connections
-    traveling over the external Internet.</t>
+    mechanisms complicates certain enterprise settings. Specifically,
+    the use of ephemeral ciphersuites is
+    not compatible with current enterprise network monitoring tools
+    such as Intrusion Detection Systems (IDS) and
+    application monitoring systems, which leverage the current TLS RSA
+    handshake passively monitor intranet TLS connections made between
+    endpoints under the enterprise's control. This traffic includes
+    TLS connections made from enterprise network security devices
+    (firewalls) and load balancers at the edge of the enterprise
+    network to internal enterprise TLS servers. It does not include
+    TLS connections traveling over the external Internet.</t>
 
-    <t>Such monitoring is ubiquitous and indispensable in some
-    industries. This monitoring is required for effective and
-    safe operation of enterprise networks. Loss of this
+    <t>Such monitoring of the enterprise network is ubiquitous and
+    indispensable in some industries. This monitoring is required for
+    effective and safe operation of enterprise networks. Loss of this
     capability may slow adoption of TLS 1.3.</t>
 
     <t> This document describes an optional configuration for TLS
-    servers that allows for the use of a static (EC) Diffie-Hellman
+    servers that is compatible with the TLS 1.3 ephemeral ciphersuites
+    without precluding enterprise network monitoring. This
+    configuration allows for the use of a static (EC) Diffie-Hellman
     private key for all TLS connections made to the server. Passive
     monitoring of TLS connections can be enabled by installing a
     corresponding copy of this key in each authorized monitoring
     device.</t>
 
     <t>An advantage of this proposal is that it can be implemented
-    using software modifications to the TLS server only, without the
-    need to make changes to TLS client implementations.</t>
+    using software modifications to the TLS server and enterprise
+    network monitoring tools, without the need to make changes to TLS
+    client implementations.</t>
 
     <section title="Terminology">
 
@@ -127,6 +130,20 @@
       "OPTIONAL" in this document are to be interpreted as described
       in <xref target="RFC2119" />.</t>
 
+      <t>This document introduces the term “static (elliptic curve)
+      Diffie-Hellman ephemeral”, generally written as “static
+      (EC)DHE”, to refer to long-lived finite field or elliptic curve
+      Diffie-Hellman keys or key pairs that will be used with the TLS
+      1.3 ephemeral ciphersuites to negotiate traffic keys for
+      multiple TLS sessions.</t>
+
+      <t>For clarity, this document also introduces the term
+      “ephemeral (elliptic curve) Diffie-Hellman ephemeral”,
+      generally written as “ephemeral (EC)DHE”, to denote finite field
+      or elliptic curve Diffie-Hellman keys or key pairs that will be
+      used with the TLS 1.3 ephemeral ciphersuites to negotiate
+      traffic keys for a single TLS sessions.</t>
+      
     </section>
 
     <section title="ASN.1">
@@ -144,49 +161,51 @@
   
   <section title="Enterprise Out-of-band TLS Decryption Architecture">
     
-    <t>This document describes the use of a static elliptic-curve
-    Diffie-Hellman (ECDHE)
-    private key by servers for use in TLS 1.3 sessions internal to an
-    enterprise network.  In <xref target="TSK-1" />, the Web Servers
-    use a static ECDHE key pair with the standard TLS 1.3 handshake
-    for connections from the Load Balancer, and the Back-End Services
-    use static ECDHE for connections from the Web Servers.  The Load
-    Balancer uses ephemeral (EC)DHE key pairs with the standard TLS 1.3
-    handshake for connections from external Browsers over the
-    Internet, to provide Forward Secrecy on those connections that are
-    exposed to third-party monitoring.  Internally, the static ECDHE
-    keys are provided to authorized TLS Decrypter devices, such as
-    intrusion detection systems, application monitoring systems or
-    network packet capture devices.</t>
+    <t>This document describes the use of a static (elliptic-curve)
+    Diffie-Hellman (static (EC)DHE) private key by servers for use in TLS 1.3
+    sessions internal to an enterprise network where network
+    monitoring is required.  In <xref target="TSK-1" />, the Web
+    Servers use a static (EC)DHE key pair with the standard TLS 1.3
+    handshake for connections from the Load Balancer, and the Back-End
+    Services use static (EC)DHE for connections from the Web Servers.
+    The Load Balancer uses ephemeral (EC)DHE key pairs with the
+    standard TLS 1.3 handshake for connections from external Browsers
+    over the Internet, to provide Forward Secrecy on those connections
+    that are exposed to third-party monitoring.  Internally, the
+    static (EC)DHE keys are provided to authorized TLS Decrypter
+    devices, such as intrusion detection systems, application
+    monitoring systems or network packet capture devices.</t>
 
     <figure align="center" anchor="TSK-1"
             title="Enterprise TLS Decryption Architecture">
       <artwork align="center"><![CDATA[
-      
-                               ********************************
-                              *                                *
-                             *            +--------+            *
-                            *             |  Web   |             *
-                           *              + Server +              *
-                          *              /|        |\              *
-+---------+  +----------+ * +----------+/ +--------+ \+----------+ *
-|         |  |          | * |   Load   +              + Back-end | *
-| Browser +--+ Internet |-*-+ Balancer |              |  Server  | *
-|         |  |          | * |          +              +          | *
-+---------+  +----------+ * +----------+\ +--------+ /+----------+ *
-                          *             .\|  Web   |/.             *
-                         *             .  + Server +  .            *
-                        *   --------  .   |        |  .            *
-                       *  /   TLS   \.    +--------+  .            *
-                       * | Decrypter |................            *
-                       *  \         /                            *
-                        *  ---------                            *
-                         *                                     *
-                          **** Enterprise Network Boundary ****
+                                ********************************
+                               *                                *
+                              *            +--------+            *
+                             *   TLS       |  Web   |             *
+                            * Termination  + Server +              *
+                           *      |       /|        |\              *
+ +---------+  +----------+ * +----|-----+/ +--------+ \+----------+ *
+ |         |  |          | * |   Load   +              + Back-end | *
+ | Browser +--+ Internet |-*-+ Balancer |              |  Server  | *
+ |         |  |          | * |    |     +              +          | *
+ +---------+  +----------+ * +----------+\ +--------+ /+----------+ *
+                           *      |      .\|  Web   |/.             *
+                           *            .  + Server +  .            *
+                           *            .  |        |  .            *
+                           *            .  +--------+  .            *
+                           *            .              .            *
+                           *            .   --------   .            *
+                           *             . /  TLS   \ .             *
+                           *              | Decrypter|              *
+                            *              \        /              *
+                             *              --------              *
+                              *                                  *
+                               *** Enterprise Network Boundary **
 
-                                 |
-<-----Ephemeral Key (EC)DHE----->|<--------Static Key ECDHE-------->
-                                 |
+                                  |
+ <------ Ephemeral (EC)DHE ------>|<-------- Static (EC)DHE -------->
+                                  |
 
 ]]>
       </artwork>
@@ -220,16 +239,16 @@
       pcap traces.</t> 
       <t>The solution must scale to handle thousands of TLS
       sessions/sec.</t> 
-      <t>Key material must be preserved a minimum of 30 days for
-      back-in-time analysis.  Using the average time to breach
-      detection as the guide for packet and key retention, the number
-      of days increases.</t>
+      <t>Key material must be preserved for back-in-time analysis.
+      The period for key retention depends upon local policy,
+      reflecting operational, security and compliance
+      requirements.</t>
       <t>Key material must be encrypted during network transit</t>
       <t>The solution must not negatively impact the enterprise
       infrastructure (servers, network, etc.)</t> 
-      <t>The solution must be able to decrypt when a TLS session
-      is reused.  This may involve the use of a TLS decryption
-      appliance.</t> 
+      <t>The solution must be able to decrypt the session when a TLS
+      session is reused.  This may involve the use of a TLS decryption
+      appliance.</t>
       <t>The solution must be able to decrypt in a physical data
       center, in a virtual environment, and in a cloud.</t> 
     </list></t>
@@ -270,7 +289,7 @@
     </t>
   </section>
 
-  <section title="Using static ECDHE on the server"
+  <section title="Using static (EC)DHE on the server"
            anchor="section-3">
 
     <t>The proposal embodied in this draft modifies the standard TLS
@@ -279,7 +298,7 @@
 
       <t>For each elliptic curve (and FF-DH parameter length)
       supported by the server, the server is provisioned with a
-      static ECDHE private/public key pair. This key pair may be either:
+      static (EC)DHE private/public key pair. This key pair may be either:
       <list style="symbols">
         <t>generated at
         server installation, and rotated at periodic intervals
@@ -395,7 +414,7 @@
     Diffie-Hellman keys are centrally managed.  The two main roles in
     the TSK protocol are "key manager" and "key consumer". Key
     consumers can be TLS servers or TLS decrypters. The key manager
-    generates, distributes, and tracks static ECDHE keys used by key
+    generates, distributes, and tracks static (EC)DHE keys used by key
     consumers. TSK messaging is based on HTTPS <xref target="RFC2818"
     />. Keys are transferred as Asymmetric Key Packages <xref
     target="RFC5958" />, using the profile in <xref target="keyrep" />
@@ -587,14 +606,14 @@
     described above:</t>
 
     <t><list style="numbers">
-      <t>The shift from fully-ephemeral ECHDE to partially
-      static ECDHE affects the security properties offered by
-      the TLS 1.3 handshake by eliminating the Forward Secrecy
-      property provided by the server. If a server is compromised
-      and the private key is stolen, then an attacker who observes any
-      TLS handshake (even one that occurred prior to the compromise)
-      will be able to recover traffic encryption keys and will be able
-      to decrypt traffic.</t>
+      <t>The shift from fully-ephemeral (EC)HDE to static
+      (EC)DHE affects the security properties offered by the TLS 1.3
+      handshake by eliminating the Forward Secrecy property provided
+      by the server. If a server is compromised and the private key is
+      stolen, then an attacker who observes any TLS handshake (even
+      one that occurred prior to the compromise) performed with this
+      static (EC)DHE key pair will be able to recover session traffic
+      encryption keys and will be able to decrypt traffic.</t>
 
       <t>As long as the server static secret key is not compromised, the
         resulting protocol will provide strong cryptographic security, as
@@ -603,11 +622,13 @@
       sufficient cryptographic security level.
       </t>
 
-      <t>Replay attacks are prevented due to the fact that the server
+<!--
+          <t>Replay attacks are prevented due to the fact that the server
       generates a unique 32-byte ServerHello.random field using a strong
       random number generator, and this value is included in the traffic
       key derivation procedure.
       </t>
+-->
 
       <t>A flaw in the generation of finite-field Diffie-Hellman
         parameters or the use of an insecure implementation could leak
@@ -623,7 +644,7 @@
     represents a deliberate weakening of some security
     properties. Implementers who choose to include this capability
     should carefully consider the risks to their infrastructure of
-    using a handshake without Forward Secrecy. Static ECDHE key pairs
+    using a handshake without Forward Secrecy. Static (EC)DHE key pairs
     should be rotated regularly.</t>
 
   </section>
